@@ -1,6 +1,21 @@
 #include "Arduino.h"
 #include "WiFi.h"
 
+const char* ssid = "MOVISTAR_6A18";
+const char* password = "TYRYTVCJTYVKX4TbJYPY";
+
+void initWifi() {
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to Wifi....");
+    while (WiFi.status() != WL_CONNECTED) {
+        Serial.print("Trying to connect to WIFI....\n");
+        delay(1000);
+    }
+    Serial.println();
+    Serial.println(WiFi.localIP());
+}
+
 void setup() {
     Serial.begin(115200);
     
@@ -9,10 +24,15 @@ void setup() {
     WiFi.disconnect();
     delay(100);
 
-    Serial.println("Setup Selesai. Mulai Scanning...");
+    initWifi();
 }
 
 void loop() {
+
+}
+
+
+void searchWifi() {
     Serial.println("Sedang scan network...");
 
     // WiFi.scanNetworks akan mengembalikan jumlah network yang ditemukan
