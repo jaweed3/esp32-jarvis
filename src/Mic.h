@@ -52,13 +52,28 @@ public:
 
         i2s_read(I2S_PORT, (void*)sample_buffer, BUFFER_LEN * sizeof(int32_t), &bytes_read, portMAX_DELAY);
 
-        int samples_read = bytes_read / sizeof(int32_t);
-        for (int i = 0; i < samples_read; i += 16) {
-            int32_t sample = sample_buffer[i] >> 14;
-
-            Serial.print("-2000 ");
-            Serial.print("2000");
-            Serial.println(sample);
+        long sum = 0;
+        int samples = bytes_read / 4;
+        
+        for (int i = 0; i < samples; i++) {
+            // Raw data 24-bit ada di Upper 24-bit dari 32-bit integer
+            // Kita geser 10 bit saja (jangan 14) biar lebih sensitif
+            int32_t val = sample_buffer[i] >> 10;
+            sum += abs(val); // Ambil nilai absolut (positif)
         }
+        
+        long avg_vol = sum / samples;
+
+        // Tampilkan Angka Mentah untuk Debug
+        Serial.printf("Vol: %4ld | ", avg_vol);
+
+        // Tampilkan Bar Graph (Visual)
+        // Scaling: Bagi nilai volume dengan 50 (atur angka ini sesuai sensitivitas)
+        int bars = constrain(avg_vol / 20, 0, 80); 
+        
+        for (int i = 0; i < bars; i++) {
+            Serial.print("#");
+        }
+        Serial.println(); // Newline
     }
 };

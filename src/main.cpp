@@ -1,4 +1,3 @@
-// testing mic
 #include <Arduino.h>
 #include "Mic.h"
 
