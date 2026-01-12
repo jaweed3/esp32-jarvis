@@ -9,7 +9,7 @@ public:
 
         I2S.setAllPins(-1, 42, 41, -1, -1);
         
-        if(!I2S.begin(PDM_MONO_MODE, 16000, 32)) {
+        if(!I2S.begin(PDM_MONO_MODE, 16000, 16)) {
             Serial.println("Failed to initiate I2S");
             while(1);
         }
@@ -17,11 +17,7 @@ public:
         Serial.println("Microphone OK! Listening!...");
     }
 
-    static void readAndPlot() {
-        int sample = I2S.read();
-
-        if (sample && sample != -1 && sample != 1) {
-            Serial.printf("raw: %d\n", sample);
-        }
+    static int16_t read() {
+        return (int16_t)I2S.read();
     }
 };
