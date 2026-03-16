@@ -5,7 +5,7 @@ This repository contains an **edge AI project** built on **Seeed Studio XIAO ESP
 
 The project explores **low-power, real-time AI inference** on microcontrollers using **TinyML** and **embedded computer vision**, with the goal of building an always-on, privacy-preserving smart edge system.
 
-## ✨ Features (Planned & In Progress)
+## ✨ Features 
 
 ### 🔊 Wake Word Detection
 - Always-on wake word detection
