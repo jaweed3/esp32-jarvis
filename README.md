@@ -1,5 +1,5 @@
 
-# ESP32-S3 Sense — Wake Word & Face Recognition (Under Development)
+# ESP32-S3 Sense — Wake Word & Face Recognition 
 
 This repository contains an **edge AI project** built on **Seeed Studio XIAO ESP32-S3 Sense**, focusing on **wake word detection** and **face recognition** running directly on-device.
 
