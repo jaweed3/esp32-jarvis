@@ -1,0 +1,55 @@
+@startuml
+title XIAO ESP32S3 Sense — Pinout Map
+
+left to right direction
+
+package "XIAO ESP32S3 (Main Board)" {
+    card "D0  / GPIO1" as d0
+    card "D1  / GPIO2" as d1
+    card "D2  / GPIO3" as d2
+    card "D3  / GPIO4" as d3
+    card "D4  / GPIO5" as d4
+    card "D5  / GPIO6" as d5
+    card "D6  / GPIO43 (TX)" as d6
+    card "D7  / GPIO44 (RX)" as d7
+    card "D8  / GPIO7 (SCK)" as d8
+    card "D9  / GPIO8 (MISO)" as d9
+    card "D10 / GPIO9 (MOSI)" as d10
+    card "5V / VBUS" as vbus
+    card "3V3 (700mA)" as v33
+    card "GND" as gnd
+    card "GPIO21 — USER_LED" as led
+}
+
+package "Sense Expansion Board" {
+    card "OV2640 Camera" as cam {
+        card "GPIO10 — XCLK" as cam_xclk
+        card "GPIO11 — DVP_Y8" as cam_y8
+        card "GPIO12 — DVP_Y7" as cam_y7
+        card "GPIO13 — DVP_PCLK" as cam_pclk
+        card "GPIO14 — DVP_Y6" as cam_y6
+        card "GPIO15 — DVP_Y2" as cam_y2
+        card "GPIO16 — DVP_Y5" as cam_y5
+        card "GPIO17 — DVP_Y3" as cam_y3
+        card "GPIO18 — DVP_Y4" as cam_y4
+        card "GPIO38 — DVP_VSYNC" as cam_vsync
+        card "GPIO39 — CAM_SCL" as cam_scl
+        card "GPIO40 — CAM_SDA" as cam_sda
+        card "GPIO47 — DVP_HREF" as cam_href
+        card "GPIO48 — DVP_Y9" as cam_y9
+    }
+
+    card "PDM Microphone" as mic {
+        card "GPIO41 — PDM DATA" as mic_data
+        card "GPIO42 — PDM CLK" as mic_clk
+    }
+
+    card "microSD Card (SPI)" as sd {
+        card "GPIO3  — CS" as sd_cs
+        card "GPIO7  — SCK" as sd_sck
+        card "GPIO8  — MISO" as sd_miso
+        card "GPIO9  — MOSI" as sd_mosi
+    }
+}
+
+@enduml

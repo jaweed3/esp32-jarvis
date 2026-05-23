@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Container>
+
+title ESP32-S3 Neural Vision — Wiring Diagram
+
+left to right direction
+
+System_Boundary(xiao, "Seeed Studio XIAO ESP32S3 Sense") {
+    Container(esp32, "ESP32-S3 SoC", "240MHz dual-core\n8MB PSRAM", "Main processor")
+
+    Container(led, "Onboard Orange LED", "GPIO21\nActive HIGH", "State indicator")
+
+    Container(cam, "OV2640 Camera", "UXGA 1600x1200\nDVP parallel", "Sense expansion board")
+
+    Container(mic, "Digital MEMS Mic", "PDM mono\n16kHz", "Sense expansion board")
+
+    Container(sd, "MicroSD Slot", "SPI mode\nCS=GPIO21", "Sense expansion board")
+}
+
+System_Ext(pc, "Host Computer", "USB-C", "Power + Serial")
+
+System_Ext(phone, "Phone / Tablet", "WiFi AP 192.168.4.1", "Captive portal setup")
+
+Rel(pc, esp32, "USB CDC", "Power\nUpload\nSerial")
+Rel(esp32, led, "GPIO21", "PWM")
+Rel(esp32, cam, "DVP + I2C", "GPIO 10-18,38-40,47-48")
+Rel(esp32, mic, "PDM I2S", "GPIO 41-42")
+Rel(esp32, sd, "SPI", "GPIO 3,7-9")
+Rel(esp32, phone, "WiFi AP/STA", "HTTP/MJPEG")
+
+@enduml
