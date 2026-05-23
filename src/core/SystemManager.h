@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "core/EventBus.h"
 #include "core/StateMachine.h"
+#include "core/LedIndicator.h"
 #include "memory/MemoryManager.h"
 #include "wifi/WifiManager.h"
 #include "wifi/CaptivePortal.h"
@@ -22,7 +23,10 @@ public:
         delay(500);
         Serial.println("\n\n=== ESP32-S3 NEURAL VISION v1.0 ===");
 
-        // 1. Memory
+        // 1. LED
+        m_led.begin();
+
+        // 2. Memory
         MemoryManager::init();
 
         // 2. EventBus
@@ -46,15 +50,32 @@ public:
             Serial.println("WARN: Camera init failed");
         }
 
-        // 6. State Machine
+        // 6. LED — state indicator
+        m_led.setState(LedIndicator::Pattern::PULSE);
+
+        // 7. WiFi — init lwIP stack first
+        WiFi.mode(WIFI_AP_STA);
+        delay(100);
+
+        // 8. State Machine
         setupStateMachine();
         m_stateMachine.begin();
 
-        // 7. HTTP Server
+        // 9. HTTP Server
         if (!m_server.begin(80)) {
             Serial.println("WARN: HTTP server init failed");
         } else {
             setupRoutes();
+        }
+
+        MemoryManager::printBudget();
+
+        // 10. WiFi connect (triggers state transition)
+        WifiManager::begin();
+        if (WifiManager::isConnected()) {
+            m_stateMachine.transitionTo(DeviceState::IDLE);
+        } else {
+            m_stateMachine.transitionTo(DeviceState::AP_MODE);
         }
 
         MemoryManager::printBudget();
@@ -89,6 +110,9 @@ public:
 
         // State timeout check
         m_stateMachine.update();
+
+        // LED animation update
+        m_led.update();
     }
 
     EventBus& events() { return m_eventBus; }
@@ -100,13 +124,15 @@ private:
 
     void setupStateMachine() {
         // INIT → hardware init done in begin(), transitioned manually after WiFi check
-        m_stateMachine.onEnter(DeviceState::INIT, []() {
+        m_stateMachine.onEnter(DeviceState::INIT, [this]() {
             Serial.println("State: INIT — Initializing...");
+            m_led.setState(LedIndicator::Pattern::PULSE);
         });
 
         // AP_MODE → start captive portal
-        m_stateMachine.onEnter(DeviceState::AP_MODE, []() {
+        m_stateMachine.onEnter(DeviceState::AP_MODE, [this]() {
             Serial.println("State: AP_MODE — Starting captive portal...");
+            m_led.setState(LedIndicator::Pattern::BLINK_SLOW);
             WifiManager::startAP("ESP32-S3-Setup");
             HttpServer::setGlobalHandle(SystemManager::instance().server().handle());
             CaptivePortal::begin();
@@ -116,8 +142,9 @@ private:
         });
 
         // CONNECTING → trying to connect WiFi
-        m_stateMachine.onEnter(DeviceState::CONNECTING, []() {
+        m_stateMachine.onEnter(DeviceState::CONNECTING, [this]() {
             Serial.println("State: CONNECTING — Attempting WiFi...");
+            m_led.setState(LedIndicator::Pattern::BLINK_FAST);
             String ssid = WifiManager::savedSSID();
             String pass = WifiManager::savedPass();
             if (ssid.length() > 0) {
@@ -132,23 +159,26 @@ private:
         });
 
         // IDLE → online, streaming ready, wake word listening
-        m_stateMachine.onEnter(DeviceState::IDLE, []() {
+        m_stateMachine.onEnter(DeviceState::IDLE, [this]() {
             Serial.printf("State: IDLE — Online at %s\n", WifiManager::getIP().c_str());
+            m_led.setState(LedIndicator::Pattern::SOLID);
             SystemManager::instance().m_stateMachine.clearTimeout();
         });
 
         // ACTIVE → wake word triggered, face detection active
-        m_stateMachine.onEnter(DeviceState::ACTIVE, []() {
+        m_stateMachine.onEnter(DeviceState::ACTIVE, [this]() {
             Serial.println("State: ACTIVE — Camera + Face detection active");
-            SystemManager::instance().m_stateMachine.setTimeout(30000); // 30s auto-idle
+            m_led.setState(LedIndicator::Pattern::SOLID);
+            SystemManager::instance().m_stateMachine.setTimeout(30000);
         });
         m_stateMachine.onTimeout([]() {
             SystemManager::instance().m_stateMachine.transitionTo(DeviceState::IDLE);
         });
 
         // ERROR → recovery
-        m_stateMachine.onEnter(DeviceState::ERROR, []() {
+        m_stateMachine.onEnter(DeviceState::ERROR, [this]() {
             Serial.println("State: ERROR — Auto-recovery in 5s...");
+            m_led.setState(LedIndicator::Pattern::BLINK_FAST);
             SystemManager::instance().m_stateMachine.setTimeout(5000);
         });
     }
@@ -261,6 +291,7 @@ private:
         }
     }
 
+    LedIndicator m_led;
     EventBus m_eventBus;
     StateMachine m_stateMachine;
     HttpServer m_server;
