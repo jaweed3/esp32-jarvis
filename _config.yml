@@ -1,6 +1,0 @@
-remote_theme: pages-themes/hacker@v0.2.0
-plugins:
-  - jekyll-remote-theme
-title: Neural Vision
-description: Edge AI Camera — Face Detection, Wake Word & Live Streaming on a $15 ESP32-S3
-show_downloads: false
