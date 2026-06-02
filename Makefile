@@ -65,6 +65,10 @@ eval-only:          ## Evaluate only (assumes quantized model)
 export-only:        ## Export only (assumes quantized model)
 	cd $(TRAINING) && $(UV) run python scripts/05_export_for_edge.py
 
+.PHONY: artifacts
+artifacts: evaluate ## Generate paper-ready LaTeX tables + PDF figures
+	cd $(TRAINING) && $(UV) run python scripts/06_generate_paper_artifacts.py
+
 # ──────────────────────────────────────
 # ESP32-S3 deployment
 # ──────────────────────────────────────
