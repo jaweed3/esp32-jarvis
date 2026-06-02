@@ -29,52 +29,83 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 def benchmark_resolution(tflite_path: Path, val_images: np.ndarray,
                          val_labels: list, imgsz: int,
-                         n_warmup: int = 10, n_runs: int = 50) -> dict:
-    """Benchmark a TFLite model at a given resolution."""
+                         n_warmup: int = 10, n_runs: int = 50,
+                         n_trials: int = 5) -> dict:
+    """Benchmark a TFLite model with multi-trial confidence intervals.
+
+    Runs `n_trials` independent trials of `n_runs` inferences each,
+    reporting mean ± 1.96σ (95% CI) across trials.
+    """
     import tensorflow as tf
 
-    interpreter = tf.lite.Interpreter(model_path=str(tflite_path))
-    interpreter.allocate_tensors()
-
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-
-    # Resize images to target resolution
+    # Resize images once
     import cv2
     resized = np.array([
         cv2.resize(img, (imgsz, imgsz)) for img in val_images
     ])
 
-    if input_details[0]["dtype"] == np.uint8:
-        resized = (resized * 255).astype(np.uint8)
-    else:
-        resized = resized.astype(np.float32)
+    trial_results = []
+    for trial in range(n_trials):
+        interpreter = tf.lite.Interpreter(model_path=str(tflite_path))
+        interpreter.allocate_tensors()
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
 
-    # Warmup
-    for i in range(min(n_warmup, len(resized))):
-        interpreter.set_tensor(input_details[0]["index"], resized[i:i+1])
-        interpreter.invoke()
+        trial_inputs = resized.copy()
+        if input_details[0]["dtype"] == np.uint8:
+            trial_inputs = (trial_inputs * 255).astype(np.uint8)
+        else:
+            trial_inputs = trial_inputs.astype(np.float32)
 
-    # Timed runs
-    latencies = []
-    for i in tqdm.trange(min(n_runs, len(resized)),
-                         desc=f"Benchmark {imgsz}x{imgsz}"):
-        interpreter.set_tensor(input_details[0]["index"], resized[i:i+1])
-        start = time.perf_counter()
-        interpreter.invoke()
-        elapsed = time.perf_counter() - start
-        latencies.append(elapsed * 1000)
+        # Warmup
+        for i in range(min(n_warmup, len(trial_inputs))):
+            interpreter.set_tensor(input_details[0]["index"], trial_inputs[i:i+1])
+            interpreter.invoke()
 
-    mean_lat = float(np.mean(latencies))
-    std_lat = float(np.std(latencies))
-    fps = 1000 / mean_lat if mean_lat > 0 else 0
+        # Timed runs
+        latencies = []
+        for i in range(min(n_runs, len(trial_inputs))):
+            interpreter.set_tensor(input_details[0]["index"], trial_inputs[i:i+1])
+            start = time.perf_counter()
+            interpreter.invoke()
+            elapsed = time.perf_counter() - start
+            latencies.append(elapsed * 1000)
+
+        trial_results.append({
+            "mean_ms": float(np.mean(latencies)),
+            "std_ms": float(np.std(latencies)),
+            "fps": 1000 / float(np.mean(latencies)) if float(np.mean(latencies)) > 0 else 0,
+        })
+
+    # Aggregate across trials
+    means = [t["mean_ms"] for t in trial_results]
+    stds = [t["std_ms"] for t in trial_results]
+    fps_vals = [t["fps"] for t in trial_results]
+
+    grand_mean = float(np.mean(means))
+    grand_std = float(np.std(means))
+    ci_95 = 1.96 * grand_std / (n_trials ** 0.5)  # 95% CI of the mean
+
+    mean_fps = float(np.mean(fps_vals))
+    fps_ci = 1.96 * float(np.std(fps_vals)) / (n_trials ** 0.5)
 
     return {
         "resolution": imgsz,
-        "mean_latency_ms": round(mean_lat, 2),
-        "std_latency_ms": round(std_lat, 2),
-        "fps": round(fps, 1),
-        "n_runs": n_runs,
+        "mean_latency_ms": round(grand_mean, 2),
+        "std_latency_ms": round(grand_std, 2),
+        "ci95_latency_ms": round(ci_95, 2),
+        "latency_ci_lo": round(grand_mean - ci_95, 2),
+        "latency_ci_hi": round(grand_mean + ci_95, 2),
+        "fps": round(mean_fps, 1),
+        "fps_ci95": round(fps_ci, 2),
+        "n_trials": n_trials,
+        "n_runs_per_trial": n_runs,
+        "trial_details": [
+            {"trial": i, "mean_ms": round(t["mean_ms"], 2),
+             "std_ms": round(t["std_ms"], 2), "fps": round(t["fps"], 1)}
+            for i, t in enumerate(trial_results)
+        ],
+        "latency_unit": "ms (mean ± 95% CI across trials)",
     }
 
 
@@ -140,6 +171,7 @@ def main():
     resolutions = eval_cfg["benchmark_resolutions"]
     n_warmup = eval_cfg["latency_warmup"]
     n_runs = eval_cfg["latency_runs"]
+    n_trials = eval_cfg.get("n_trials", 5)
 
     # Locate TFLite models
     tflite_fp32 = QUANTIZED_DIR / "yolov8n_fp32.tflite"
@@ -194,7 +226,7 @@ def main():
         for imgsz in resolutions:
             bench = benchmark_resolution(
                 tflite_path, val_images, val_labels, imgsz,
-                n_warmup=n_warmup, n_runs=n_runs
+                n_warmup=n_warmup, n_runs=n_runs, n_trials=n_trials
             )
             results["resolution_benchmarks"][f"{imgsz}x{imgsz}"] = bench
 
@@ -263,8 +295,10 @@ def main():
         print(f"  Model size: {data.get('file_size_mb', 'N/A')} MB")
         print(f"  RAM estimate: {data.get('ram_estimate_kb', {}).get('estimated_total_kb', 'N/A')} KB")
         for res_key, bench in data.get("resolution_benchmarks", {}).items():
+            ci = bench.get("ci95_latency_ms", 0)
             print(f"  {res_key}: {bench.get('fps', 'N/A')} FPS | "
-                  f"{bench.get('mean_latency_ms', 'N/A')} ms")
+                  f"{bench.get('mean_latency_ms', 'N/A')} ± {ci} ms "
+                  f"(95% CI, {bench.get('n_trials', '?')} trials)")
 
     print(f"\nTrade-off Analysis:")
     for res_key, ta in all_results.get("tradeoff_analysis", {}).items():

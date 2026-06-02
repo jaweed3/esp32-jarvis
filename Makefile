@@ -65,6 +65,14 @@ eval-only:          ## Evaluate only (assumes quantized model)
 export-only:        ## Export only (assumes quantized model)
 	cd $(TRAINING) && $(UV) run python scripts/05_export_for_edge.py
 
+.PHONY: power
+power:             ## Estimate ESP32-S3 power consumption + figures
+	cd $(TRAINING) && $(UV) run python scripts/07_power_estimation.py
+
+.PHONY: ablation
+ablation:          ## Run width multiplier ablation study
+	cd $(TRAINING) && $(UV) run python scripts/08_ablation.py
+
 .PHONY: artifacts
 artifacts: evaluate ## Generate paper-ready LaTeX tables + PDF figures
 	cd $(TRAINING) && $(UV) run python scripts/06_generate_paper_artifacts.py
