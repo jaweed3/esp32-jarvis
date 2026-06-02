@@ -1,0 +1,67 @@
+# RescueVision Edge — Experiment Configuration
+
+# Dataset
+dataset:
+  name: "COCO-Person-SAR"
+  root: ../dataset
+  train_frac: 0.8
+  val_frac: 0.15
+  test_frac: 0.05
+  classes: ["person"]
+  coco_person_limit: 2000  # images for baseline training
+
+# Model
+model:
+  architecture: "yolov8n"
+  pretrained: true
+  imgsz: 192  # reduced input size for edge deployment
+  epochs: 50
+  batch: 16
+  lr: 0.001
+  optimizer: "AdamW"
+  device: "auto"  # cuda, mps, cpu, or auto
+
+# Quantization
+quantization:
+  method: "post_training"  # ptq, qat
+  target_dtype: "int8"     # int8, int16
+  representative_dataset_size: 200
+  tflite_optimization: "DEFAULT"
+
+# Evaluation
+evaluation:
+  iou_threshold: 0.5
+  conf_threshold: 0.25
+  latency_warmup: 10
+  latency_runs: 100
+  benchmark_resolutions: [192, 256, 320]
+
+# Hardware targets
+targets:
+  - name: "PC"
+    device: "cuda"
+    precision: ["fp32", "int8"]
+  - name: "ESP32-S3"
+    device: "esp32s3"
+    precision: ["int8"]
+    flash_mb: 8
+    psram_mb: 8
+    freq_mhz: 240
+  - name: "Raspberry_Pi_4"
+    device: "arm64"
+    precision: ["fp32", "int8"]
+    flash_mb: 0  # SD card
+    ram_mb: 4096
+    freq_mhz: 1800
+
+# Paper metadata
+paper:
+  title: "RescueVision Edge: 8-bit Post-Training Quantization of YOLO-based Victim Detection on ESP32-S3 for Disaster SAR"
+  short_title: "RescueVision Edge"
+  keywords:
+    - "Edge AI"
+    - "Quantization"
+    - "YOLO"
+    - "ESP32-S3"
+    - "SAR"
+    - "Victim Detection"

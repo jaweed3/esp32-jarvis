@@ -1,0 +1,13 @@
+[project]
+name = "rescuevision-edge-rpi"
+version = "0.1.0"
+description = "RPi benchmark for RescueVision Edge"
+requires-python = ">=3.10"
+dependencies = [
+    "ultralytics>=8.0.0",
+    "opencv-python>=4.8.0",
+    "tensorflow>=2.13.0",
+    "numpy>=1.24.0",
+    "tqdm>=4.65.0",
+    "matplotlib>=3.7.0",
+]

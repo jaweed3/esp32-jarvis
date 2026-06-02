@@ -1,0 +1,16 @@
+# RescueVision Edge — COCO Person Dataset Configuration for YOLO training
+
+# Dataset path relative to training/ dir
+path: ../dataset
+
+# Train/val/test splits
+train: images/train
+val: images/val
+test: images/test
+
+# Number of classes
+nc: 1
+
+# Class names
+names:
+  0: person

@@ -1,3 +1,23 @@
 .pio
 .cache
 compile_commands.json
+
+# RescueVision Edge research artifacts
+training/dataset/_raw/
+training/baseline/yolov8n_fp32/
+training/quantized/*.tflite
+training/evaluation_results/
+training/notebooks/*.png
+
+# Deployment generated model files (binary .tflite copied from training)
+deployment/raspberry-pi/model/model_int8.tflite
+deployment/raspberry-pi/model/model_int8.tflite
+deployment/raspberry-pi/results/
+
+# Python
+__pycache__/
+*.pyc
+.uv/
+.venv/
+venv/
+*.egg-info/
