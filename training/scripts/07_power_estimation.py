@@ -14,7 +14,7 @@ Outputs:
   - power_budget.tex (LaTeX table for paper)
 """
 
-import json, time
+import json, sys, time
 from pathlib import Path
 from collections import OrderedDict
 

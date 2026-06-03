@@ -8,6 +8,7 @@ benchmarks, then generates publication-ready artifacts in paper-exports/.
 
 import json
 import math
+import sys
 from pathlib import Path
 from collections import defaultdict
 

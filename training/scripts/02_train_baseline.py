@@ -38,8 +38,6 @@ def main():
     # Dataset YAML
     dataset_yaml = PROJECT_ROOT / "configs" / "rescuevision.yaml"
     if not dataset_yaml.exists():
-        # Generate from dataset dir
-        from scripts import utils
         print(f"Dataset YAML not found. Run 01_prepare_dataset.py first.")
         return
 
