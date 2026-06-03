@@ -19,7 +19,7 @@ model:
   batch: 16
   lr: 0.001
   optimizer: "AdamW"
-  device: "auto"  # cuda, mps, cpu, or auto
+  device: 0  # cuda:0 (use "auto" for auto-detect)
 
 # Quantization
 quantization:
