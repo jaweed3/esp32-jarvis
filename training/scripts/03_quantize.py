@@ -112,6 +112,9 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
             raw = np.squeeze(output)
             print(f"\nDEBUG img {i}: raw shape={raw.shape}, scores>0.25={(raw[min(4,raw.shape[0]-1)]>0.25).sum()}, top5={sorted(raw[min(4,raw.shape[0]-1)].tolist(), reverse=True)[:5]}")
             print(f"  boxes len={len(boxes)}, scores len={len(scores)}")
+            if len(boxes) > 0:
+                print(f"  first box xyxy: {boxes[0].tolist()}, score={scores[0]:.4f}")
+                print(f"  raw cx[:3]: {raw[0,:3].tolist()}, cy[:3]: {raw[1,:3].tolist()}, w[:3]: {raw[2,:3].tolist()}, h[:3]: {raw[3,:3].tolist()}")
         predictions.append({
             "boxes": boxes.tolist() if len(boxes) else [],
             "scores": scores.tolist() if len(scores) else [],
