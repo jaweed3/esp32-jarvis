@@ -138,7 +138,7 @@ def estimate_ram_usage(tflite_path: Path) -> dict:
 
 
 def load_val_data(imgsz: int, max_samples: int = 200):
-    """Load validation images and labels."""
+    """Load and resize validation images to target resolution."""
     val_img_dir = DATASET_DIR / "images" / "val"
     val_lbl_dir = DATASET_DIR / "labels" / "val"
 
@@ -154,6 +154,7 @@ def load_val_data(imgsz: int, max_samples: int = 200):
         if img is None:
             continue
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (imgsz, imgsz))
         img = img.astype(np.float32) / 255.0
         images.append(img)
         valid_lbls.append(lbl_path)
