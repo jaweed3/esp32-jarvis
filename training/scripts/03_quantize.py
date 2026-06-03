@@ -70,29 +70,6 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
     predictions = []
     latencies = []
 
-    gt = []
-    for lbl in val_labels:
-        with open(lbl) as f:
-            lines = f.read().strip().split("\n")
-        boxes = []
-        for line in lines:
-            if not line.strip():
-                continue
-            parts = line.strip().split()
-            if len(parts) == 5:
-                _, cx, cy, w, h = map(float, parts)
-                x1 = (cx - w / 2) * imgsz
-                y1 = (cy - h / 2) * imgsz
-                x2 = (cx + w / 2) * imgsz
-                y2 = (cy + h / 2) * imgsz
-                boxes.append([x1, y1, x2, y2])
-        gt.append({"boxes": boxes})
-    total_gt = sum(len(g["boxes"]) for g in gt)
-    print(f"  GT boxes total: {total_gt}")
-    if len(gt) > 0:
-        first_gt = gt[0]
-        print(f"  GT[0]: {len(first_gt['boxes'])} boxes: {first_gt['boxes'][:2]}")
-
     for i in tqdm.trange(len(calib_images), desc="Evaluating TFLite"):
         inp = calib_images[i:i+1]
         interpreter.set_tensor(input_details[0]["index"], inp)
@@ -108,13 +85,6 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
             if scale is not None and zp is not None:
                 output = (output.astype(np.float32) - zp) * scale
         boxes, scores, _ = utils.postprocess_yolo_output(output, conf_thresh, imgsz)
-        if i < 3:
-            raw = np.squeeze(output)
-            print(f"\nDEBUG img {i}: raw shape={raw.shape}, scores>0.25={(raw[min(4,raw.shape[0]-1)]>0.25).sum()}, top5={sorted(raw[min(4,raw.shape[0]-1)].tolist(), reverse=True)[:5]}")
-            print(f"  boxes len={len(boxes)}, scores len={len(scores)}")
-            if len(boxes) > 0:
-                print(f"  first box xyxy: {boxes[0].tolist()}, score={scores[0]:.4f}")
-                print(f"  raw cx[:3]: {raw[0,:3].tolist()}, cy[:3]: {raw[1,:3].tolist()}, w[:3]: {raw[2,:3].tolist()}, h[:3]: {raw[3,:3].tolist()}")
         predictions.append({
             "boxes": boxes.tolist() if len(boxes) else [],
             "scores": scores.tolist() if len(scores) else [],

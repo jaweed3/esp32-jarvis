@@ -1,0 +1,37 @@
+{
+  "model": "YOLOv8n",
+  "input_size": 192,
+  "variants": {
+    "FP32 (baseline)": {
+      "format": "PyTorch",
+      "size_mb": 5.91
+    },
+    "TFLite FP32": {
+      "format": "TFLite Float32",
+      "size_mb": 3.01,
+      "mAP@0.5": 0.1226,
+      "precision": 0.0871,
+      "recall": 0.2447,
+      "mean_latency_ms": 2.89,
+      "fps": 346.0
+    },
+    "TFLite INT8": {
+      "format": "TFLite Int8 Quantified",
+      "size_mb": 3.08,
+      "mAP@0.5": 0.0441,
+      "precision": 0.1712,
+      "recall": 0.0947,
+      "mean_latency_ms": 2.45,
+      "fps": 408.2
+    }
+  },
+  "quantization_config": {
+    "method": "post_training",
+    "target_dtype": "int8",
+    "representative_dataset_size": 200
+  },
+  "accuracy_drop_int8_vs_fp32": {
+    "mAP_drop": 0.0785,
+    "size_reduction_x": 0.98
+  }
+}
