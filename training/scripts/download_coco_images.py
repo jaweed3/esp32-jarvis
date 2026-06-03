@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Download real COCO images to replace blank placeholders."""
+"""Download real COCO images to replace blank placeholders (parallel)."""
 
 import subprocess
 import sys
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -11,6 +12,21 @@ BASE_URLS = [
     "http://images.cocodataset.org/train2017",
     "http://images.cocodataset.org/val2017",
 ]
+
+
+def download_one(jpg: Path) -> tuple[str, bool]:
+    if jpg.stat().st_size > 10000:
+        return (jpg.name, True)
+    for base in BASE_URLS:
+        url = f"{base}/{jpg.name}"
+        ret = subprocess.run(
+            ["wget", "-q", "--timeout=15", "--tries=2", url, "-O", str(jpg)],
+            capture_output=True, timeout=60,
+        )
+        if ret.returncode == 0:
+            return (jpg.name, True)
+    return (jpg.name, False)
+
 
 for split in ["train", "val", "test"]:
     img_dir = PROJECT_ROOT / "dataset" / "images" / split
@@ -24,30 +40,26 @@ for split in ["train", "val", "test"]:
         continue
 
     existing = [p for p in jpgs if p.stat().st_size > 10000]
-    print(f"{split}: {len(jpgs)} total, {len(existing)} already real")
+    need = [p for p in jpgs if p.stat().st_size <= 10000]
+    print(f"{split}: {len(jpgs)} total, {len(existing)} real, {len(need)} to download")
 
-    for i, jpg in enumerate(jpgs):
-        if jpg.stat().st_size > 10000:
-            continue
+    if not need:
+        print(f"  All real already")
+        continue
 
-        fname = jpg.name
-        ok = False
-        for base in BASE_URLS:
-            url = f"{base}/{fname}"
-            ret = subprocess.run(
-                ["wget", "-q", "--timeout=15", "--tries=2", url, "-O", str(jpg)],
-                capture_output=True, timeout=60
-            )
-            if ret.returncode == 0:
-                ok = True
-                break
+    done = len(existing)
+    failed = 0
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(download_one, jpg): jpg for jpg in need}
+        for f in as_completed(futures):
+            name, ok = f.result()
+            if ok:
+                done += 1
+            else:
+                failed += 1
+            if (done + failed) % 100 == 0:
+                print(f"  [{done}/{len(jpgs)}] ({failed} failed)")
 
-        if not ok:
-            print(f"  FAILED: {fname}")
-        elif (i + 1) % 50 == 0:
-            kb = jpg.stat().st_size / 1024
-            print(f"  [{i+1}/{len(jpgs)}] {fname} ({kb:.0f} KB)")
-
-    print(f"  Done: {split}")
+    print(f"  Done: {split} ({done}/{len(jpgs)}, {failed} failed)")
 
 print("All downloads complete.")
