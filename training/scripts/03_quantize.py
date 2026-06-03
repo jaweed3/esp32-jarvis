@@ -70,6 +70,29 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
     predictions = []
     latencies = []
 
+    gt = []
+    for lbl in val_labels:
+        with open(lbl) as f:
+            lines = f.read().strip().split("\n")
+        boxes = []
+        for line in lines:
+            if not line.strip():
+                continue
+            parts = line.strip().split()
+            if len(parts) == 5:
+                _, cx, cy, w, h = map(float, parts)
+                x1 = (cx - w / 2) * imgsz
+                y1 = (cy - h / 2) * imgsz
+                x2 = (cx + w / 2) * imgsz
+                y2 = (cy + h / 2) * imgsz
+                boxes.append([x1, y1, x2, y2])
+        gt.append({"boxes": boxes})
+    total_gt = sum(len(g["boxes"]) for g in gt)
+    print(f"  GT boxes total: {total_gt}")
+    if len(gt) > 0:
+        first_gt = gt[0]
+        print(f"  GT[0]: {len(first_gt['boxes'])} boxes: {first_gt['boxes'][:2]}")
+
     for i in tqdm.trange(len(calib_images), desc="Evaluating TFLite"):
         inp = calib_images[i:i+1]
         interpreter.set_tensor(input_details[0]["index"], inp)
@@ -183,6 +206,13 @@ def main():
 
     val_lbl_dir = DATASET_DIR / "labels" / "val"
     val_lbl_paths = sorted(val_lbl_dir.glob("*.txt"))[:200]
+
+    print(f"\n  Val images: {len(val_img_paths)}, labels: {len(val_lbl_paths)}")
+    img_stems = {p.stem for p in val_img_paths}
+    lbl_stems = {p.stem for p in val_lbl_paths}
+    print(f"  Common stems: {len(img_stems & lbl_stems)}")
+    print(f"  Sample image: {val_img_paths[0].name if val_img_paths else 'NONE'}")
+    print(f"  Sample label: {val_lbl_paths[0].name if val_lbl_paths else 'NONE'}")
 
     print("\n[1/2] Converting to TFLite FP32...")
     tflite_fp32_path = QUANTIZED_DIR / "yolov8n_fp32.tflite"
