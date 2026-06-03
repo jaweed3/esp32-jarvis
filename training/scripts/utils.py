@@ -214,7 +214,7 @@ def postprocess_yolo_output(output, conf_thresh, imgsz):
         y1 = (cy - h / 2) * imgsz
         x2 = (cx + w / 2) * imgsz
         y2 = (cy + h / 2) * imgsz
-        boxes = np.stack([x1, y1, x2, y2], axis=1))
+        boxes = np.stack([x1, y1, x2, y2], axis=1)
 
         return boxes, scores, np.zeros(len(scores))
 
