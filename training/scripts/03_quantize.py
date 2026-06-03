@@ -108,6 +108,26 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
     return metrics
 
 
+def convert_saved_model_to_tflite(saved_model_dir: Path, output_path: Path,
+                                   representative_data=None,
+                                   optimizations=None):
+    import tensorflow as tf
+    converter = tf.lite.TFLiteConverter.from_saved_model(str(saved_model_dir))
+    if representative_data is not None:
+        converter.optimizations = optimizations or [tf.lite.Optimize.DEFAULT]
+        converter.representative_dataset = lambda: representative_data
+        converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+        converter.inference_input_type = tf.uint8
+        converter.inference_output_type = tf.uint8
+    else:
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    tflite_model = converter.convert()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(str(output_path), "wb") as f:
+        f.write(tflite_model)
+    print(f"  Saved TFLite model to {output_path}")
+
+
 def main():
     print("=" * 60)
     print("RescueVision Edge — Post-Training Quantization")
