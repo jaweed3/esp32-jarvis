@@ -51,7 +51,7 @@ def preprocess_for_tflite(image_paths, imgsz: int, limit: int = 200):
 
 
 def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
-                    val_labels: list, imgsz: int, conf_thresh: float = 0.25,
+                    val_labels: list, imgsz: int, conf_thresh: float = 0.1,
                     iou_thresh: float = 0.5) -> dict:
     import tensorflow as tf
 
@@ -64,10 +64,11 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
     input_dtype = input_details[0]["dtype"]
     calib_images = (val_images * 255).astype(np.uint8) if input_dtype == np.uint8 else val_images.astype(np.float32)
 
+    output_dtype = output_details[0]["dtype"]
+    output_quant = output_details[0].get("quantization", (0, 0))
+
     predictions = []
     latencies = []
-
-    debug_samples = min(3, len(calib_images))
 
     for i in tqdm.trange(len(calib_images), desc="Evaluating TFLite"):
         inp = calib_images[i:i+1]
@@ -79,6 +80,10 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
         latencies.append(elapsed * 1000)
 
         output = interpreter.get_tensor(output_details[0]["index"])
+        if output_dtype == np.uint8:
+            scale, zp = output_quant
+            if scale is not None and zp is not None:
+                output = (output.astype(np.float32) - zp) * scale
         boxes, scores, _ = utils.postprocess_yolo_output(output, conf_thresh, imgsz)
         if i < 3:
             raw = np.squeeze(output)
