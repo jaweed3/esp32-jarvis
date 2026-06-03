@@ -33,7 +33,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 def representative_dataset_gen(calib_images):
     for img in calib_images:
-        yield [img.astype(np.float32)]
+        yield [img[np.newaxis, ...].astype(np.float32)]
 
 
 def preprocess_for_tflite(image_paths, imgsz: int, limit: int = 200):
