@@ -158,12 +158,25 @@ def bbox_iou(box1: np.ndarray, box2: np.ndarray) -> float:
     return inter / union
 
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.integer,)):
+            return int(obj)
+        if isinstance(obj, (np.floating,)):
+            return float(obj)
+        if isinstance(obj, (np.bool_,)):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
+
 def save_results(results: dict, path: Path, label: str = "") -> None:
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     fname = f"results_{label}.json" if label else "results.json"
     with open(path / fname, "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(results, f, indent=2, cls=NumpyEncoder)
     print(f"Results saved to {path / fname}")
 
 
