@@ -77,7 +77,7 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
         latencies.append(elapsed * 1000)
 
         output = interpreter.get_tensor(output_details[0]["index"])
-        boxes, scores, _ = postprocess_yolo_output(output, conf_thresh, imgsz)
+        boxes, scores, _ = utils.postprocess_yolo_output(output, conf_thresh, imgsz)
         predictions.append({
             "boxes": boxes.tolist() if len(boxes) else [],
             "scores": scores.tolist() if len(scores) else [],
@@ -106,59 +106,6 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
     metrics["fps"] = round(1000 / metrics["mean_latency_ms"], 1)
 
     return metrics
-
-
-def postprocess_yolo_output(output, conf_thresh, imgsz):
-    output = np.squeeze(output)
-    if output.ndim == 2 and output.shape[0] == 84:
-        boxes = output[:4, :]
-        scores = output[4:, :]
-        person_scores = np.max(scores[:1], axis=0)
-
-        mask = person_scores > conf_thresh
-        if not np.any(mask):
-            return np.array([]), np.array([]), np.array([])
-
-        boxes = boxes[:, mask]
-        scores = person_scores[mask]
-
-        cx, cy, w, h = boxes
-        x1 = (cx - w / 2) * imgsz
-        y1 = (cy - h / 2) * imgsz
-        x2 = (cx + w / 2) * imgsz
-        y2 = (cy + h / 2) * imgsz
-        boxes = np.stack([x1, y1, x2, y2], axis=1)
-
-        return boxes, scores, np.zeros(len(scores))
-
-    return np.array([]), np.array([]), np.array([])
-
-
-def convert_saved_model_to_tflite(saved_model_path: Path, output_path: Path,
-                                  representative_data=None):
-    import tensorflow as tf
-
-    converter = tf.lite.TFLiteConverter.from_saved_model(str(saved_model_path))
-
-    if representative_data is not None:
-        converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        converter.representative_dataset = lambda: representative_data
-        converter.target_spec.supported_ops = [
-            tf.lite.OpsSet.TFLITE_BUILTINS_INT8
-        ]
-        converter.inference_input_type = tf.uint8
-        converter.inference_output_type = tf.uint8
-    else:
-        converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        converter.target_spec.supported_ops = [
-            tf.lite.OpsSet.TFLITE_BUILTINS
-        ]
-
-    tflite_model = converter.convert()
-    with open(output_path, "wb") as f:
-        f.write(tflite_model)
-
-    return output_path
 
 
 def main():
