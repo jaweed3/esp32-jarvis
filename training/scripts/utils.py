@@ -195,30 +195,39 @@ def letterbox_imgsz(model: YOLO) -> int:
 
 
 def postprocess_yolo_output(output, conf_thresh, imgsz):
-    """Minimal YOLO output post-processing (single-class person detection)."""
+    """Minimal YOLO output post-processing (single-class person detection).
+    Handles both (84, N) multi-class and (5, N) single-class formats."""
     output = np.squeeze(output)
-    if output.ndim == 2 and output.shape[0] == 84:
+    if output.ndim != 2:
+        return np.array([]), np.array([]), np.array([])
+
+    n_dims, n_boxes = output.shape
+
+    if n_dims == 84:
         boxes = output[:4, :]
         scores = output[4:, :]
         person_scores = np.max(scores[:1], axis=0)
+    elif n_dims == 5:
+        boxes = output[:4, :]
+        person_scores = output[4, :]
+    else:
+        return np.array([]), np.array([]), np.array([])
 
-        mask = person_scores > conf_thresh
-        if not np.any(mask):
-            return np.array([]), np.array([]), np.array([])
+    mask = person_scores > conf_thresh
+    if not np.any(mask):
+        return np.array([]), np.array([]), np.array([])
 
-        boxes = boxes[:, mask]
-        scores = person_scores[mask]
+    boxes = boxes[:, mask]
+    scores = person_scores[mask]
 
-        cx, cy, w, h = boxes
-        x1 = (cx - w / 2) * imgsz
-        y1 = (cy - h / 2) * imgsz
-        x2 = (cx + w / 2) * imgsz
-        y2 = (cy + h / 2) * imgsz
-        boxes = np.stack([x1, y1, x2, y2], axis=1)
+    cx, cy, w, h = boxes
+    x1 = (cx - w / 2) * imgsz
+    y1 = (cy - h / 2) * imgsz
+    x2 = (cx + w / 2) * imgsz
+    y2 = (cy + h / 2) * imgsz
+    boxes = np.stack([x1, y1, x2, y2], axis=1)
 
-        return boxes, scores, np.zeros(len(scores))
-
-    return np.array([]), np.array([]), np.array([])
+    return boxes, scores, np.zeros(len(scores))
 
 
 def class_labels_for_sar() -> List[str]:
