@@ -5,8 +5,8 @@ description = "Quantized YOLO victim detection on ESP32-S3 for disaster SAR"
 requires-python = ">=3.10"
 
 dependencies = [
-    "torch>=2.0.0",
-    "torchvision>=0.15.0",
+    # torch>=2.0.0 (installed via CUDA index)
+    # torchvision>=0.15.0 (installed via CUDA index)
     "ultralytics>=8.0.0",
     "opencv-python>=4.8.0",
     "onnx>=1.14.0",
@@ -22,6 +22,11 @@ dependencies = [
     "pyyaml>=6.0",
     "pillow>=10.0.0",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
 
 [tool.setuptools.packages.find]
 where = ["."]
