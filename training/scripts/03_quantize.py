@@ -67,6 +67,8 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
     predictions = []
     latencies = []
 
+    debug_samples = min(3, len(calib_images))
+
     for i in tqdm.trange(len(calib_images), desc="Evaluating TFLite"):
         inp = calib_images[i:i+1]
         interpreter.set_tensor(input_details[0]["index"], inp)
@@ -78,6 +80,10 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
 
         output = interpreter.get_tensor(output_details[0]["index"])
         boxes, scores, _ = utils.postprocess_yolo_output(output, conf_thresh, imgsz)
+        if i < 3:
+            raw = np.squeeze(output)
+            print(f"\nDEBUG img {i}: raw shape={raw.shape}, scores>0.25={(raw[min(4,raw.shape[0]-1)]>0.25).sum()}, top5={sorted(raw[min(4,raw.shape[0]-1)].tolist(), reverse=True)[:5]}")
+            print(f"  boxes len={len(boxes)}, scores len={len(scores)}")
         predictions.append({
             "boxes": boxes.tolist() if len(boxes) else [],
             "scores": scores.tolist() if len(scores) else [],

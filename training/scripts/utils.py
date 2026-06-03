@@ -87,22 +87,20 @@ def compute_map(predictions: List[Dict], ground_truths: List[Dict],
     """
     from sklearn.metrics import auc
 
-    all_precisions = []
-    all_recalls = []
     n_gt = sum(len(g["boxes"]) for g in ground_truths)
+    if n_gt == 0:
+        return {"mAP@0.5": 0.0, "precision": 0.0, "recall": 0.0}
+
+    all_tp_fp = []
 
     for pred, gt in zip(predictions, ground_truths):
         if len(pred["boxes"]) == 0:
-            if len(gt["boxes"]) > 0:
-                all_precisions.append(0.0)
-                all_recalls.append(0.0)
             continue
 
         gt_boxes = np.array(gt["boxes"])
         pred_boxes = np.array(pred["boxes"])
         pred_scores = np.array(pred["scores"])
 
-        # Sort by confidence
         order = np.argsort(-pred_scores)
         pred_boxes = pred_boxes[order]
         pred_scores = pred_scores[order]
@@ -122,27 +120,26 @@ def compute_map(predictions: List[Dict], ground_truths: List[Dict],
             else:
                 fp[i] = 1
 
-        tp_cum = np.cumsum(tp)
-        fp_cum = np.cumsum(fp)
-        precisions = tp_cum / (tp_cum + fp_cum + 1e-8)
-        recalls = tp_cum / max(n_gt, 1)
+        for t, f in zip(tp, fp):
+            all_tp_fp.append((t, f, n_gt))
 
-        all_precisions.extend(precisions.tolist())
-        all_recalls.extend(recalls.tolist())
-
-    if not all_precisions:
+    if not all_tp_fp:
         return {"mAP@0.5": 0.0, "precision": 0.0, "recall": 0.0}
 
-    # 11-point interpolated mAP
+    tp_cum = np.cumsum([x[0] for x in all_tp_fp])
+    fp_cum = np.cumsum([x[1] for x in all_tp_fp])
+    precisions = tp_cum / (tp_cum + fp_cum + 1e-8)
+    recalls = tp_cum / n_gt
+
     ap = 0
     for t in np.linspace(0, 1, 11):
-        p = max([p for p, r in zip(all_precisions, all_recalls) if r >= t], default=0)
+        p = max([p for p, r in zip(precisions, recalls) if r >= t], default=0)
         ap += p / 11
 
     return {
         "mAP@0.5": round(ap, 4),
-        "precision": round(np.mean(all_precisions), 4),
-        "recall": round(np.mean(all_recalls), 4),
+        "precision": round(float(np.mean(precisions)), 4),
+        "recall": round(float(np.mean(recalls)), 4),
     }
 
 
