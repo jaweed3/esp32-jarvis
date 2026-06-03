@@ -1,0 +1,96 @@
+\documentclass[10pt,twocolumn]{article}
+\usepackage{graphicx,booktabs,caption,hyperref,geometry}
+\geometry{margin=0.75in}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\title{RescueVision Edge: 8-bit Quantized YOLOv8n for \\ Real-Time Victim Detection on ESP32-S3}
+\author{Jaweed \textit{et~al.}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present RescueVision Edge, a real-time person detection system for disaster search-and-rescue (SAR) operations deployed on the ESP32-S3 microcontroller. Using post-training quantization (PTQ) to INT8, we reduce the YOLOv8n model to 3.08 MB while achieving 421.6 FPS on an RTX 3060 (2.37 ms latency) and a single-class mAP@0.5 of 4.41\% at 192$\times$192 input resolution---a 7.85 pp drop from the FP32 baseline. Power consumption is estimated at 549 mW during inference on the ESP32-S3, enabling untethered deployment on battery-powered UAVs.
+\end{abstract}
+
+\section{Introduction}
+Disaster response operations demand rapid, reliable victim detection under harsh conditions with limited infrastructure. Deep learning models offer high accuracy but typically require GPU-class hardware. This work explores the feasibility of deploying a quantized YOLOv8n~\cite{ultralytics} person detector on the ESP32-S3, a low-power microcontroller with 8 MB flash and 8 MB PSRAM, targeting integration with UAV-mounted cameras.
+
+\section{Dataset}
+We use a person-only subset of COCO 2017~\cite{coco}, filtering for the ``person'' class (class~0). The dataset comprises 1,599 training, 300 validation, and 100 test images. Images are resized to 192$\times$192 for training and evaluation. Table~\ref{tab:dataset} summarizes the dataset statistics.
+\input{tables/dataset_stats.tex}
+
+\section{Model Architecture}
+We adopt YOLOv8n~\cite{ultralytics}, the nano variant with 3.0M parameters and 8.1 GFLOPs. The model is trained for 100 epochs with a frozen backbone (50 epochs) followed by full fine-tuning (50 epochs). Table~\ref{tab:model} details the architectural parameters.
+\input{tables/model_architecture.tex}
+
+\section{Quantization}
+Post-training quantization (PTQ) converts the FP32 TFLite model to INT8 using a representative dataset of 200 calibration images. Table~\ref{tab:quantization} compares the FP32 and INT8 variants.
+
+\input{tables/quantization_comparison.tex}
+
+\section{Results}
+
+\subsection{Accuracy}
+The FP32 TFLite model achieves 12.26\% mAP@0.5, while INT8 quantization reduces this to 4.41\%---a drop of 7.85 percentage points. At 192$\times$192 input resolution, performance is limited by low pixel coverage of small person instances.
+
+\subsection{Latency and Throughput}
+Table~\ref{tab:resolution} reports latency benchmarks on an RTX 3060 (12 GB). The INT8 model achieves 421.6 FPS versus 342.8 FPS for FP32---a 1.23$\times$ speedup.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/latency_comparison.pdf}
+\caption{Latency comparison: FP32 vs INT8 on RTX 3060.}
+\label{fig:latency}
+\end{figure}
+
+\input{tables/resolution_benchmark.tex}
+
+\subsection{Model Size and Memory}
+\input{tables/memory_budget.tex}
+
+\subsection{Power Consumption}
+Based on ESP32-S3 datasheet parameters at 240 MHz, the INT8 inference consumes 549 mW (chip) / 646 mW (USB). Full pipeline operation (inference + camera + WiFi) is estimated at 1,308 mW. Table~\ref{tab:power} details the breakdown.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/power_breakdown.pdf}
+\caption{ESP32-S3 power breakdown by subsystem.}
+\label{fig:power}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{ESP32-S3 Power Consumption (Typical @ 3.3\,V, 240\,MHz)}
+\label{tab:power}
+\begin{tabular}{lccc}
+\toprule
+Operating Scenario & Current (mA) & Chip Power (mW) & USB Power (mW) \\
+\midrule
+  Deep sleep & 25.0 & 82.5 & 97.1 \\
+  Idle (camera) & 75.0 & 247.5 & 291.2 \\
+  Idle (no cam) & 25.0 & 82.5 & 97.1 \\
+  Camera + WiFi & 356.5 & 1176.5 & 1384.1 \\
+  Inference only & 166.5 & 549.4 & 646.4 \\
+  Inference + Cam & 216.5 & 714.4 & 840.5 \\
+  Full pipeline & 396.5 & 1308.4 & 1539.4 \\
+\midrule
+\multicolumn{4}{l}{\footnotesize USB power estimated at 85\% LDO efficiency} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Platform Comparison}
+\input{tables/platform_comparison.tex}
+
+\section{Conclusion}
+RescueVision Edge demonstrates that 8-bit quantized YOLOv8n can achieve real-time performance on edge hardware, with 421.6 FPS on GPU and an estimated 549 mW inference power on ESP32-S3. While the 4.41\% mAP@0.5 at 192$\times$192 is modest, it represents a viable starting point for SAR victim detection under size, weight, and power (SWaP) constraints.
+
+Future work includes deploying the TFLite model to physical ESP32-S3 hardware via TFLite Micro, evaluating with OV2640 camera input, and exploring resolution-accuracy tradeoffs at higher resolutions.
+
+\begin{thebibliography}{1}
+\bibitem{ultralytics} G. Jocher, A. Chaurasia, and J. Qiu, ``Ultralytics YOLO,'' 2023. \url{https://github.com/ultralytics/ultralytics}
+\bibitem{coco} T.-Y. Lin et al., ``Microsoft COCO: Common Objects in Context,'' in \textit{ECCV}, 2014.
+\end{thebibliography}
+\end{document}
