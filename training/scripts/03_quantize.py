@@ -57,12 +57,6 @@ def convert_to_tflite(onnx_path: Path, output_path: Path,
                       optimizations, representative_data=None):
     """Convert ONNX to TFLite with optional quantization."""
     import tensorflow as tf
-
-    converter = tf.lite.TFLiteConverter.from_saved_model(str(onnx_path))
-
-    # TF1 saved model → try ONNX-TF approach
-    # Actually, we need onnx → tf saved model first
-    # Use onnx-tf for conversion
     import onnx
     from onnx_tf.backend import prepare
 
