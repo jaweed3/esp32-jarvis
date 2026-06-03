@@ -35,7 +35,7 @@ evaluation:
   latency_warmup: 10
   latency_runs: 50
   n_trials: 5          # number of independent trials for confidence interval
-  benchmark_resolutions: [192, 256, 320]
+  benchmark_resolutions: [192]
 
 # Hardware targets
 targets:
