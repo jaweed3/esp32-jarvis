@@ -8,8 +8,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 BASE_URLS = [
-    "http://images.cocodataset.org/val2017",
     "http://images.cocodataset.org/train2017",
+    "http://images.cocodataset.org/val2017",
 ]
 
 for split in ["train", "val", "test"]:
@@ -35,8 +35,8 @@ for split in ["train", "val", "test"]:
         for base in BASE_URLS:
             url = f"{base}/{fname}"
             ret = subprocess.run(
-                ["wget", "-q", url, "-O", str(jpg)],
-                capture_output=True, timeout=30
+                ["wget", "-q", "--timeout=15", "--tries=2", url, "-O", str(jpg)],
+                capture_output=True, timeout=60
             )
             if ret.returncode == 0:
                 ok = True
