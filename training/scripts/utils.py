@@ -194,6 +194,33 @@ def letterbox_imgsz(model: YOLO) -> int:
         return 640
 
 
+def postprocess_yolo_output(output, conf_thresh, imgsz):
+    """Minimal YOLO output post-processing (single-class person detection)."""
+    output = np.squeeze(output)
+    if output.ndim == 2 and output.shape[0] == 84:
+        boxes = output[:4, :]
+        scores = output[4:, :]
+        person_scores = np.max(scores[:1], axis=0)
+
+        mask = person_scores > conf_thresh
+        if not np.any(mask):
+            return np.array([]), np.array([]), np.array([])
+
+        boxes = boxes[:, mask]
+        scores = person_scores[mask]
+
+        cx, cy, w, h = boxes
+        x1 = (cx - w / 2) * imgsz
+        y1 = (cy - h / 2) * imgsz
+        x2 = (cx + w / 2) * imgsz
+        y2 = (cy + h / 2) * imgsz
+        boxes = np.stack([x1, y1, x2, y2], axis=1))
+
+        return boxes, scores, np.zeros(len(scores))
+
+    return np.array([]), np.array([]), np.array([])
+
+
 def class_labels_for_sar() -> List[str]:
     """Return class labels relevant to SAR victim detection."""
     return ["person"]

@@ -155,8 +155,7 @@ def visualize_sample_detections(tflite_path: Path, output_dir: Path,
         output = interpreter.get_tensor(output_details[0]["index"])
 
         # Post-process
-        from scripts.03_quantize import postprocess_yolo_output
-        boxes, scores, _ = postprocess_yolo_output(output, conf_thresh=0.25, imgsz=imgsz)
+        boxes, scores, _ = utils.postprocess_yolo_output(output, conf_thresh=0.25, imgsz=imgsz)
 
         # Draw
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
