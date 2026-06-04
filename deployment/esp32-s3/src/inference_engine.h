@@ -1,6 +1,7 @@
 #ifndef INFERENCE_ENGINE_H
 #define INFERENCE_ENGINE_H
 
+#include <cstddef>
 #include <cstdint>
 
 class InferenceEngine {
@@ -10,7 +11,7 @@ public:
 
     bool begin();
     bool runInference(const uint8_t* input_data, int image_width, int image_height);
-    float* getOutputBuffer();
+    int8_t* getOutputBuffer();
     int getOutputSize() const;
     int getInputWidth() const;
     int getInputHeight() const;
@@ -29,7 +30,7 @@ private:
     size_t m_tensor_arena_size = 0;
 
     uint8_t* m_input_buffer = nullptr;
-    float* m_output_buffer = nullptr;
+    int8_t* m_output_buffer_int8 = nullptr;
 
     int m_input_width = 192;
     int m_input_height = 192;

@@ -9,7 +9,9 @@
 Platform & Resolution & FPS & Latency (ms) & Power (W) \\
 \midrule
   PC (GPU) & 192x192 & 421.6 & 2.37 & {---} \\
-  ESP32-S3 & 192$\times$192 & TBD & TBD & 0.3 \\
+  ESP32-S3 & 192$\times$192 & 0.0046 & 219287$^\dagger$ & 0.55$^\ddagger$ \\
   \bottomrule
 \end{tabular}
-\end{table*}
+\vspace{2pt}
+{\footnotesize $^\dagger$ TFLite Micro reference kernels (no ESP-NN optimizations). \\
+$^\ddagger$ Model-based estimate; no empirical power measurement.}\end{table*}

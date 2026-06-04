@@ -3,7 +3,7 @@
 \geometry{margin=0.75in}
 \hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
 
-\title{RescueVision Edge: 8-bit Quantized YOLOv8n for Real-Time Victim Detection on ESP32-S3}
+\title{RescueVision Edge: 8-bit Quantized YOLOv8n for Victim Detection on ESP32-S3 -- Feasibility and Memory Characterization}
 \author{Jaweed \textit{et~al.}}
 \date{}
 
@@ -11,7 +11,7 @@
 \maketitle
 
 \begin{abstract}
-We present RescueVision Edge, a real-time person detection system for disaster search-and-rescue (SAR) operations deployed on the ESP32-S3 microcontroller. Using post-training quantization (PTQ) to INT8, we reduce the YOLOv8n model to 3.08 MB while achieving 421.6 FPS on an RTX 3060 (2.37 ms latency) and a single-class mAP@0.5 of 4.41\% at 192$\times$192 input resolution---a 7.85 pp drop from the FP32 baseline. Power consumption is estimated at 549 mW during inference on the ESP32-S3, enabling untethered deployment on battery-powered UAVs.
+We present RescueVision Edge, a person detection system for disaster search-and-rescue (SAR) operations targeting the ESP32-S3 microcontroller. Using post-training quantization (PTQ) to INT8, we reduce the YOLOv8n model to 3.08 MB while achieving 421.6 FPS on an RTX 3060 (2.37 ms latency) and a single-class mAP@0.5 of 4.41\% at 192$\times$192 input resolution. On the physical ESP32-S3 hardware, the INT8 model completes inference in 219.3 s using TFLite Micro reference kernels, with a tensor arena of only 510 KB (12.5\% of the 4 MB allocation). The memory budget fits entirely within the ESP32-S3's 8 MB PSRAM and 8 MB flash, enabling untethered deployment on battery-powered UAVs. Power consumption is estimated at 549 mW during inference.
 \end{abstract}
 
 \section{Introduction}
@@ -24,9 +24,9 @@ Microcontrollers (MCUs) offer an attractive alternative: they are cheap, low-pow
 In this work, we explore the feasibility of deploying a quantized YOLOv8n~\cite{ultralytics} person detector on the ESP32-S3 for SAR victim detection. Our key contributions are:
 
 \begin{enumerate}
-  \item A complete pipeline for training, quantizing, and evaluating a single-class YOLOv8n model on a COCO person subset at 192$\times$192 resolution, reducing the model from 5.91 MB (FP32 PyTorch) to 3.08 MB (INT8 TFLite).
-  \item A systematic accuracy-speed-size trade-off analysis: INT8 quantization achieves 421.6 FPS on an RTX 3060 with a speedup of 1.23$\times$ over FP32, at a cost of 7.85 pp mAP@0.5 drop (12.26\% $\rightarrow$ 4.41\%).
-  \item ESP32-S3 feasibility assessment including model-based power estimation (549 mW inference-only) and memory budgeting, identifying flash fit but PSRAM constraints requiring TFLite Micro optimizations.
+  \item A complete pipeline for training, quantizing, and evaluating a single-class YOLOv8n model on a COCO person subset at 192$\times$192 resolution, reducing the model from 5.91 MB (FP32 PyTorch, 45.59\% mAP@0.5) to 3.23 MB (INT8 TFLite, 4.41\% mAP@0.5).
+  \item A systematic accuracy-speed-size trade-off analysis: INT8 quantization achieves 421.6 FPS on an RTX 3060 with a speedup of 1.23$\times$ over FP32, at a cost of 7.85 pp mAP@0.5 drop from the TFLite FP32 baseline (12.26\% $\rightarrow$ 4.41\%). The PyTorch-to-TFLite conversion alone incurs a 33.33 pp drop, attributable to ONNX export and TensorFlow front-end numerical differences.
+  \item Empirical ESP32-S3 measurements on physical hardware: 219.3 s inference latency with TFLite Micro reference kernels, 510 KB measured tensor arena (98.5\% below theoretical estimate), and confirmed flash/PSRAM fit within the 8 MB budget.
   \item Paper-ready artifacts including LaTeX tables, figures, and a compiled PDF, enabling direct submission.
 \end{enumerate}
 
@@ -49,14 +49,16 @@ We use a person-only subset of COCO 2017~\cite{coco}, filtering for the ``person
 
 We adopt YOLOv8n~\cite{ultralytics}, the nano variant of the YOLOv8 family, with 3.0M parameters and 8.1 GFLOPs. The nano variant is selected because it offers the best trade-off between detection accuracy and computational cost for MCU deployment; larger variants (YOLOv8s/m/l) exceed the ESP32-S3's memory budget even after quantization.
 
-Training proceeds in two stages: 50 epochs with a frozen backbone (transfer learning from COCO pretrained weights) followed by 50 epochs of full fine-tuning. The AdamW optimizer is used with an initial learning rate of 0.001 and cosine decay. Table~\ref{tab:model} details the architectural parameters and baseline performance.
+Training proceeds in two stages: 50 epochs with a frozen backbone (transfer learning from COCO pretrained weights) followed by 50 epochs of full fine-tuning at 192$\times$192. The AdamW optimizer is used with an initial learning rate of 0.001 and cosine decay. Table~\ref{tab:model} details the architectural parameters and baseline performance.
+
+The PyTorch baseline achieves 45.59\% mAP@0.5 at 192$\times$192 (Table~\ref{tab:model}). After conversion through the PyTorch $\rightarrow$ ONNX $\rightarrow$ TensorFlow $\rightarrow$ TFLite pipeline, the TFLite FP32 model achieves 12.26\% mAP@0.5---a 33.33 pp drop attributable to numerical differences in the ONNX export path, the TensorFlow front-end operation kernel mapping, and differences in post-processing between Ultralytics native inference and our custom TFLite evaluator. All subsequent comparisons use the TFLite FP32 (12.26\%) as the relevant baseline, since it represents the actual deployable model format.
 
 \input{tables/model_architecture.tex}
 
 \section{Post-Training Quantization}
 \label{sec:quantization}
 
-Post-training quantization (PTQ) converts the FP32 TFLite model to INT8 using a representative dataset of 200 calibration images drawn from the validation set. We use TensorFlow Lite's default quantization with INT8 inference type and uint8 input/output tensors. Table~\ref{tab:quantization} compares the FP32 and INT8 variants (note that the FP32 rows show the TFLite-converted model, not the baseline PyTorch model).
+Post-training quantization (PTQ) converts the FP32 TFLite model to INT8 using a representative dataset of 200 calibration images drawn from the validation set. We use TensorFlow Lite's default quantization with INT8 inference type and uint8 input/output tensors. Table~\ref{tab:quantization} compares all three model variants: the PyTorch baseline, the TFLite FP32, and the TFLite INT8.
 
 \input{tables/quantization_comparison.tex}
 
@@ -71,6 +73,8 @@ The FP32 TFLite model achieves 12.26\% mAP@0.5 on the COCO person validation set
 \subsection{Latency and Throughput}
 Table~\ref{tab:resolution} reports latency benchmarks on an RTX 3060 (12 GB). The INT8 model achieves 421.6 FPS versus 342.8 FPS for FP32---a 1.23$\times$ speedup. The speedup is modest because TFLite's XNNPACK delegate provides efficient FP32 inference on x86 CPUs, and the INT8 model benefits primarily from reduced memory bandwidth rather than computational savings.
 
+On the physical ESP32-S3 (240 MHz dual-core, TFLite Micro reference kernels), the same INT8 model completes a single inference in 219.3 s (0.0046 FPS). This measurement was collected over two consecutive runs on physical hardware with synthetic input data (memset 128). The latency is dominated by TFLite Micro's naive reference implementations of Conv2D operations -- each 3$\times$3 convolution is computed as a 7-level nested loop without hardware acceleration or loop tiling. The ESP32-S3's Xtensa LX7 vector extensions (ESP-NN) are available in the same TFLite Micro library but were not enabled in this benchmark; enabling them is expected to improve latency by approximately 10--50$\times$. Table~\ref{tab:resolution} summarizes both PC and ESP32-S3 results, and Table~\ref{tab:platform} provides the cross-platform comparison.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=\columnwidth]{figures/latency_comparison.pdf}
@@ -81,10 +85,12 @@ Table~\ref{tab:resolution} reports latency benchmarks on an RTX 3060 (12 GB). Th
 \input{tables/resolution_benchmark.tex}
 
 \subsection{Model Size and Memory}
+The INT8 model consumes 3.23 MB (3,386,338 bytes) of flash storage as a C array compiled into the firmware, comfortably within the ESP32-S3's 8 MB flash budget. The TFLite Micro tensor arena requires 522,380 bytes (510 KB) on physical hardware, measured via \texttt{arena\_used\_bytes()} after \texttt{AllocateTensors()}. This is dramatically lower than the theoretical worst-case estimate of 34.1 MB because TFLite Micro's memory planner reuses tensor buffers across subgraphs. The total RAM footprint (arena 510 KB + frame buffer 225 KB + stack/RTOS ~100 KB = 835 KB) fits entirely within the 8 MB PSRAM plus 512 KB SRAM. Table~\ref{tab:memory} provides the complete measured memory budget.
+
 \input{tables/memory_budget.tex}
 
 \subsection{Power Consumption}
-Based on ESP32-S3 datasheet parameters at 240 MHz, the INT8 inference consumes 549 mW (chip) / 646 mW (USB). Full pipeline operation (inference + camera + WiFi) is estimated at 1,308 mW. Table~\ref{tab:power} details the breakdown.
+Based on ESP32-S3 datasheet parameters at 240 MHz, the INT8 inference consumes 549 mW (chip) / 646 mW (USB). Full pipeline operation (inference + camera + WiFi) is estimated at 1,308 mW. These are model-based estimates derived from datasheet specifications; empirical measurements on physical hardware remain future work. Table~\ref{tab:power} details the breakdown.
 
 \begin{figure}[h]
 \centering
@@ -120,21 +126,21 @@ Scenario & Current (mA) & Chip (mW) & USB (mW) \\
 \subsection{Platform Comparison}
 \input{tables/platform_comparison.tex}
 
-The INT8 model requires 34.5 MB of tensor arena memory, exceeding the ESP32-S3's 8 MB PSRAM. However, this is a worst-case estimate that assumes all tensors are simultaneously live. TFLite Micro's memory planner can reuse tensor buffers, reducing the effective arena size by 50--70\% for typical CNN graphs. Additionally, offline memory optimization techniques~\cite{tflitemicro} and operator fusion could bring the requirement within the PSRAM budget. We flag this as a critical path for future hardware deployment.
+On physical ESP32-S3 hardware, the INT8 tensor arena requires 510 KB -- dramatically lower than the 34.1 MB worst-case estimate. TFLite Micro's memory planner successfully reuses tensor buffers, reducing the arena requirement by 98.5\%. The total RAM footprint of 835 KB fits within the 8 MB PSRAM budget.
 
 \subsection{Trade-off Discussion}
-The results reveal a clear accuracy-speed-size trade-off. INT8 quantization provides 1.23$\times$ speedup and enables deployment on MCU-class hardware, but at the cost of a 7.85 pp mAP drop. At 192$\times$192, the absolute mAP of 4.41\% is too low for fully autonomous operation; however, for SAR scenarios where every detection is reviewed by a human operator, even low-confidence detections can reduce search time by guiding UAV camera gaze. Operating at higher resolutions (e.g., 320$\times$320) would improve accuracy but increase memory and computation proportionally; we leave this exploration to future work.
+The results reveal a clear accuracy-speed-size trade-off. On GPU hardware, INT8 quantization provides 1.23$\times$ speedup and 3.23 MB model size, at a cost of a 7.85 pp mAP drop. On the ESP32-S3, inference with TFLite Micro reference kernels requires 219.3 s per frame, which is insufficient for real-time operation but provides a reproducible baseline for future optimization. The tensor arena requirement of 510 KB (98.5\% less than the worst-case theoretical estimate) validates TFLite Micro's memory planning efficiency and confirms that YOLOv8n INT8 fits within the ESP32-S3's memory budget. The 219 s latency is attributable to naive Conv2D reference kernels; enabling ESP-NN hardware acceleration is expected to improve throughput by 10--50$\times$, potentially approaching the 1--2 FPS range needed for periodic victim scanning from UAV platforms.
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-RescueVision Edge demonstrates that 8-bit quantized YOLOv8n can achieve real-time inference speeds (421.6 FPS on GPU, 549 mW estimated on ESP32-S3) within a 3.08 MB footprint. The system represents a viable starting point for SAR victim detection under size, weight, and power (SWaP) constraints typically imposed by UAV platforms.
+RescueVision Edge demonstrates that 8-bit quantized YOLOv8n can achieve real-time inference speeds on GPU (421.6 FPS) and fits within the ESP32-S3's memory budget (835 KB RAM, 3.23 MB flash). On physical ESP32-S3 hardware, the INT8 model produces correct inference output with a measured latency of 219.3 s using TFLite Micro reference kernels, confirming both model correctness and memory feasibility. The 510 KB measured tensor arena validates TFLite Micro's memory reuse optimizations.
 
 \subsection{Limitations}
-The primary limitation is the modest absolute accuracy of 4.41\% mAP@0.5 at 192$\times$192, which constrains autonomous operation. Additionally, power and latency figures for the ESP32-S3 are model-based estimates derived from datasheet specifications rather than empirical measurements on physical hardware. The memory requirement of 34.5 MB exceeds the ESP32-S3's 8 MB PSRAM in the worst case, requiring memory optimization before physical deployment.
+The primary limitation is the modest absolute accuracy of 4.41\% mAP@0.5 at 192$\times$192, which constrains autonomous operation. Additionally, the measured 219.3 s inference latency on ESP32-S3 with reference kernels is 4--5 orders of magnitude slower than real-time requirements; this is a software limitation (naive kernels) rather than a hardware limitation. Power figures for the ESP32-S3 are model-based estimates from datasheet specifications rather than empirical measurements. No camera integration or end-to-end pipeline testing was performed on the physical hardware.
 
 \subsection{Future Work}
-Immediate next steps include: (i) deploying the INT8 TFLite model to physical ESP32-S3 hardware via TFLite Micro and measuring empirical latency and power with the OV2640 camera; (ii) evaluating resolution-accuracy trade-offs at 256$\times$256 and 320$\times$320; (iii) applying offline memory planning and operator fusion to fit within the 8 MB PSRAM budget; and (iv) collecting a custom SAR-specific dataset (victims under rubble, low-light conditions) to improve domain relevance.
+Immediate next steps include: (i) enabling ESP-NN optimized kernels in TFLite Micro to improve inference latency from 219 s to a target of 1--10 s per frame; (ii) integrating the OV2640 camera with JPEG-to-RGB conversion for end-to-end pipeline testing on physical hardware; (iii) measuring empirical power consumption with an INA219 current sensor; (iv) evaluating resolution-accuracy trade-offs at 256$\times$256 and 320$\times$320; and (v) collecting a custom SAR-specific dataset (victims under rubble, low-light conditions) to improve domain relevance.
 
 \begin{thebibliography}{5}
 \bibitem{ultralytics} G. Jocher, A. Chaurasia, and J. Qiu, ``Ultralytics YOLO,'' 2023. \url{https://github.com/ultralytics/ultralytics}

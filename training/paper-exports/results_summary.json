@@ -1,0 +1,661 @@
+{
+  "dataset": {
+    "train": {
+      "images": 1600,
+      "labels": 6893
+    },
+    "val": {
+      "images": 300,
+      "labels": 1196
+    },
+    "test": {
+      "images": 100,
+      "labels": 465
+    }
+  },
+  "config": {
+    "dataset": {
+      "name": "COCO-Person-SAR",
+      "root": "../dataset",
+      "train_frac": 0.8,
+      "val_frac": 0.15,
+      "test_frac": 0.05,
+      "classes": [
+        "person"
+      ],
+      "coco_person_limit": 2000
+    },
+    "model": {
+      "architecture": "yolov8n",
+      "pretrained": true,
+      "imgsz": 192,
+      "epochs": 50,
+      "batch": 16,
+      "lr": 0.001,
+      "optimizer": "AdamW",
+      "device": 0
+    },
+    "quantization": {
+      "method": "post_training",
+      "target_dtype": "int8",
+      "representative_dataset_size": 200,
+      "tflite_optimization": "DEFAULT"
+    },
+    "evaluation": {
+      "iou_threshold": 0.5,
+      "conf_threshold": 0.25,
+      "latency_warmup": 10,
+      "latency_runs": 50,
+      "n_trials": 5,
+      "benchmark_resolutions": [
+        192
+      ]
+    },
+    "targets": [
+      {
+        "name": "PC",
+        "device": "cuda",
+        "precision": [
+          "fp32",
+          "int8"
+        ]
+      },
+      {
+        "name": "ESP32-S3",
+        "device": "esp32s3",
+        "precision": [
+          "int8"
+        ],
+        "flash_mb": 8,
+        "psram_mb": 8,
+        "freq_mhz": 240
+      },
+      {
+        "name": "Raspberry_Pi_4",
+        "device": "arm64",
+        "precision": [
+          "fp32",
+          "int8"
+        ],
+        "flash_mb": 0,
+        "ram_mb": 4096,
+        "freq_mhz": 1800
+      }
+    ],
+    "paper": {
+      "title": "RescueVision Edge: 8-bit Quantized YOLOv8n for Victim Detection on ESP32-S3 -- Feasibility and Memory Characterization",
+      "short_title": "RescueVision Edge",
+      "keywords": [
+        "Edge AI",
+        "Quantization",
+        "YOLO",
+        "ESP32-S3",
+        "SAR",
+        "Victim Detection"
+      ]
+    }
+  },
+  "baseline": {
+    "model": "YOLOv8n",
+    "precision": "FP32",
+    "input_size": [
+      1,
+      3,
+      192,
+      192
+    ],
+    "weights_path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.pt",
+    "onnx_path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.onnx",
+    "torchscript_path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.torchscript",
+    "path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.pt",
+    "size_bytes": 6198378,
+    "size_mb": 5.91,
+    "suffix": ".pt",
+    "metrics": {
+      "metrics/precision(B)": 0.6956002468757415,
+      "metrics/recall(B)": 0.3887959866220736,
+      "metrics/mAP50(B)": 0.4559088759423626,
+      "metrics/mAP50-95(B)": 0.26521306178406095,
+      "fitness": 0.26521306178406095
+    },
+    "total_params": 3005843,
+    "trainable_params": 0,
+    "mean_latency_ms": 6.340740119994734,
+    "fps": 157.71029581335853
+  },
+  "quantization": {
+    "model": "YOLOv8n",
+    "input_size": 192,
+    "variants": {
+      "FP32 (baseline)": {
+        "format": "PyTorch",
+        "size_mb": 5.91
+      },
+      "TFLite FP32": {
+        "format": "TFLite Float32",
+        "size_mb": 3.01,
+        "mAP@0.5": 0.1226,
+        "precision": 0.0871,
+        "recall": 0.2447,
+        "mean_latency_ms": 2.89,
+        "fps": 346.0
+      },
+      "TFLite INT8": {
+        "format": "TFLite Int8 Quantified",
+        "size_mb": 3.08,
+        "mAP@0.5": 0.0441,
+        "precision": 0.1712,
+        "recall": 0.0947,
+        "mean_latency_ms": 2.45,
+        "fps": 408.2
+      }
+    },
+    "quantization_config": {
+      "method": "post_training",
+      "target_dtype": "int8",
+      "representative_dataset_size": 200
+    },
+    "accuracy_drop_int8_vs_fp32": {
+      "mAP_drop": 0.0785,
+      "size_reduction_x": 0.98
+    }
+  },
+  "evaluation": {
+    "experiment": "RescueVision Edge: 8-bit Post-Training Quantization of YOLO-based Victim Detection on ESP32-S3 for Disaster SAR",
+    "model": "yolov8n",
+    "evaluation_config": {
+      "iou_threshold": 0.5,
+      "conf_threshold": 0.25,
+      "resolutions": [
+        192
+      ],
+      "latency_runs": 50
+    },
+    "baseline_fp32_pytorch": {
+      "model": "YOLOv8n",
+      "precision": "FP32",
+      "input_size": [
+        1,
+        3,
+        192,
+        192
+      ],
+      "weights_path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.pt",
+      "onnx_path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.onnx",
+      "torchscript_path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.torchscript",
+      "path": "/home/labti/esp32/training/baseline/yolov8n_fp32/weights/best.pt",
+      "size_bytes": 6198378,
+      "size_mb": 5.91,
+      "suffix": ".pt",
+      "metrics": {
+        "metrics/precision(B)": 0.6956002468757415,
+        "metrics/recall(B)": 0.3887959866220736,
+        "metrics/mAP50(B)": 0.4559088759423626,
+        "metrics/mAP50-95(B)": 0.26521306178406095,
+        "fitness": 0.26521306178406095
+      },
+      "total_params": 3005843,
+      "trainable_params": 0,
+      "mean_latency_ms": 6.340740119994734,
+      "fps": 157.71029581335853
+    },
+    "tflite_fp32": {
+      "file_size_mb": 3.01,
+      "ram_estimate_kb": {
+        "tensor_arena_bytes": 34663160,
+        "tensor_arena_kb": 33850.7,
+        "input_buffer_bytes": 442368,
+        "output_buffer_bytes": 15120,
+        "estimated_total_kb": 34297.5
+      },
+      "resolution_benchmarks": {
+        "192x192": {
+          "resolution": 192,
+          "mean_latency_ms": 2.92,
+          "std_latency_ms": 0.08,
+          "ci95_latency_ms": 0.07,
+          "latency_ci_lo": 2.85,
+          "latency_ci_hi": 2.99,
+          "fps": 342.8,
+          "fps_ci95": 7.97,
+          "n_trials": 5,
+          "n_runs_per_trial": 50,
+          "trial_details": [
+            {
+              "trial": 0,
+              "mean_ms": 2.8,
+              "std_ms": 0.06,
+              "fps": 357.4
+            },
+            {
+              "trial": 1,
+              "mean_ms": 2.89,
+              "std_ms": 0.11,
+              "fps": 346.3
+            },
+            {
+              "trial": 2,
+              "mean_ms": 2.91,
+              "std_ms": 0.09,
+              "fps": 344.1
+            },
+            {
+              "trial": 3,
+              "mean_ms": 2.99,
+              "std_ms": 0.31,
+              "fps": 334.9
+            },
+            {
+              "trial": 4,
+              "mean_ms": 3.02,
+              "std_ms": 0.16,
+              "fps": 331.7
+            }
+          ],
+          "latency_unit": "ms (mean \u00b1 95% CI across trials)"
+        }
+      }
+    },
+    "tflite_int8": {
+      "file_size_mb": 3.08,
+      "ram_estimate_kb": {
+        "tensor_arena_bytes": 34891148,
+        "tensor_arena_kb": 34073.4,
+        "input_buffer_bytes": 442368,
+        "output_buffer_bytes": 15120,
+        "estimated_total_kb": 34520.2
+      },
+      "resolution_benchmarks": {
+        "192x192": {
+          "resolution": 192,
+          "mean_latency_ms": 2.37,
+          "std_latency_ms": 0.02,
+          "ci95_latency_ms": 0.02,
+          "latency_ci_lo": 2.35,
+          "latency_ci_hi": 2.39,
+          "fps": 421.6,
+          "fps_ci95": 3.79,
+          "n_trials": 5,
+          "n_runs_per_trial": 50,
+          "trial_details": [
+            {
+              "trial": 0,
+              "mean_ms": 2.35,
+              "std_ms": 0.06,
+              "fps": 426.0
+            },
+            {
+              "trial": 1,
+              "mean_ms": 2.37,
+              "std_ms": 0.04,
+              "fps": 421.9
+            },
+            {
+              "trial": 2,
+              "mean_ms": 2.35,
+              "std_ms": 0.06,
+              "fps": 425.2
+            },
+            {
+              "trial": 3,
+              "mean_ms": 2.37,
+              "std_ms": 0.19,
+              "fps": 421.3
+            },
+            {
+              "trial": 4,
+              "mean_ms": 2.42,
+              "std_ms": 0.11,
+              "fps": 413.8
+            }
+          ],
+          "latency_unit": "ms (mean \u00b1 95% CI across trials)"
+        }
+      }
+    },
+    "tradeoff_analysis": {
+      "192x192": {
+        "int8_fps": 421.6,
+        "fp32_fps": 342.8,
+        "speedup_x": 1.23,
+        "int8_latency_ms": 2.37,
+        "fp32_latency_ms": 2.92
+      },
+      "size_comparison": {
+        "fp32_mb": 3.01,
+        "int8_mb": 3.08,
+        "reduction_x": 0.98,
+        "reduction_pct": -2.3
+      }
+    },
+    "esp32s3_feasibility": {
+      "flash_required_mb": 3.23,
+      "ram_required_kb": 835,
+      "arena_used_bytes": 522380,
+      "esp32s3_available_flash_mb": 8,
+      "esp32s3_available_psram_mb": 8,
+      "esp32s3_available_sram_kb": 512,
+      "fits_in_flash": true,
+      "fits_in_psram": true,
+      "feasible": true,
+      "measured_inference_ms": 219287,
+      "measured_fps": 0.0046,
+      "measurement_notes": [
+        "TFLite Micro reference kernels (no ESP-NN)",
+        "Arena usage measured via arena_used_bytes() on physical ESP32-S3",
+        "Synthetic input (memset 128), no camera",
+        "CPU load 99.2% during inference"
+      ]
+    }
+  },
+  "power": {
+    "model": "ESP32-S3 @ 240MHz, 3.3V",
+    "scenarios": [
+      {
+        "scenario": "Deep sleep",
+        "mode": "min",
+        "total_ma": 20,
+        "power_chip_mw": 66.0,
+        "power_usb_mw": 77.6,
+        "breakdown": {
+          "Base (LDO + misc)": 20
+        }
+      },
+      {
+        "scenario": "Deep sleep",
+        "mode": "typical",
+        "total_ma": 25.0,
+        "power_chip_mw": 82.5,
+        "power_usb_mw": 97.1,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0
+        }
+      },
+      {
+        "scenario": "Deep sleep",
+        "mode": "max",
+        "total_ma": 30,
+        "power_chip_mw": 99.0,
+        "power_usb_mw": 116.5,
+        "breakdown": {
+          "Base (LDO + misc)": 30
+        }
+      },
+      {
+        "scenario": "Idle (camera)",
+        "mode": "min",
+        "total_ma": 60,
+        "power_chip_mw": 198.0,
+        "power_usb_mw": 232.9,
+        "breakdown": {
+          "Base (LDO + misc)": 20,
+          "Camera (OV2640)": 40
+        }
+      },
+      {
+        "scenario": "Idle (camera)",
+        "mode": "typical",
+        "total_ma": 75.0,
+        "power_chip_mw": 247.5,
+        "power_usb_mw": 291.2,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0,
+          "Camera (OV2640)": 50.0
+        }
+      },
+      {
+        "scenario": "Idle (camera)",
+        "mode": "max",
+        "total_ma": 90,
+        "power_chip_mw": 297.0,
+        "power_usb_mw": 349.4,
+        "breakdown": {
+          "Base (LDO + misc)": 30,
+          "Camera (OV2640)": 60
+        }
+      },
+      {
+        "scenario": "Idle (no cam)",
+        "mode": "min",
+        "total_ma": 20,
+        "power_chip_mw": 66.0,
+        "power_usb_mw": 77.6,
+        "breakdown": {
+          "Base (LDO + misc)": 20
+        }
+      },
+      {
+        "scenario": "Idle (no cam)",
+        "mode": "typical",
+        "total_ma": 25.0,
+        "power_chip_mw": 82.5,
+        "power_usb_mw": 97.1,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0
+        }
+      },
+      {
+        "scenario": "Idle (no cam)",
+        "mode": "max",
+        "total_ma": 30,
+        "power_chip_mw": 99.0,
+        "power_usb_mw": 116.5,
+        "breakdown": {
+          "Base (LDO + misc)": 30
+        }
+      },
+      {
+        "scenario": "Camera + WiFi",
+        "mode": "min",
+        "total_ma": 288,
+        "power_chip_mw": 950.4,
+        "power_usb_mw": 1118.1,
+        "breakdown": {
+          "Base (LDO + misc)": 20,
+          "CPU active (dual)": 55,
+          "Camera (OV2640)": 40,
+          "WiFi TX (streaming)": 150,
+          "PSRAM access": 15,
+          "Flash read": 8
+        }
+      },
+      {
+        "scenario": "Camera + WiFi",
+        "mode": "typical",
+        "total_ma": 356.5,
+        "power_chip_mw": 1176.5,
+        "power_usb_mw": 1384.1,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0,
+          "CPU active (dual)": 70.0,
+          "Camera (OV2640)": 50.0,
+          "WiFi TX (streaming)": 180.0,
+          "PSRAM access": 20.0,
+          "Flash read": 11.5
+        }
+      },
+      {
+        "scenario": "Camera + WiFi",
+        "mode": "max",
+        "total_ma": 425,
+        "power_chip_mw": 1402.5,
+        "power_usb_mw": 1650.0,
+        "breakdown": {
+          "Base (LDO + misc)": 30,
+          "CPU active (dual)": 85,
+          "Camera (OV2640)": 60,
+          "WiFi TX (streaming)": 210,
+          "PSRAM access": 25,
+          "Flash read": 15
+        }
+      },
+      {
+        "scenario": "Inference only",
+        "mode": "min",
+        "total_ma": 128,
+        "power_chip_mw": 422.4,
+        "power_usb_mw": 496.9,
+        "breakdown": {
+          "Base (LDO + misc)": 20,
+          "CPU active (dual)": 55,
+          "PSRAM access": 15,
+          "Flash read": 8,
+          "TFLite inference": 30
+        }
+      },
+      {
+        "scenario": "Inference only",
+        "mode": "typical",
+        "total_ma": 166.5,
+        "power_chip_mw": 549.4,
+        "power_usb_mw": 646.4,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0,
+          "CPU active (dual)": 70.0,
+          "PSRAM access": 20.0,
+          "Flash read": 11.5,
+          "TFLite inference": 40.0
+        }
+      },
+      {
+        "scenario": "Inference only",
+        "mode": "max",
+        "total_ma": 205,
+        "power_chip_mw": 676.5,
+        "power_usb_mw": 795.9,
+        "breakdown": {
+          "Base (LDO + misc)": 30,
+          "CPU active (dual)": 85,
+          "PSRAM access": 25,
+          "Flash read": 15,
+          "TFLite inference": 50
+        }
+      },
+      {
+        "scenario": "Inference + Cam",
+        "mode": "min",
+        "total_ma": 168,
+        "power_chip_mw": 554.4,
+        "power_usb_mw": 652.2,
+        "breakdown": {
+          "Base (LDO + misc)": 20,
+          "CPU active (dual)": 55,
+          "Camera (OV2640)": 40,
+          "PSRAM access": 15,
+          "Flash read": 8,
+          "TFLite inference": 30
+        }
+      },
+      {
+        "scenario": "Inference + Cam",
+        "mode": "typical",
+        "total_ma": 216.5,
+        "power_chip_mw": 714.4,
+        "power_usb_mw": 840.5,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0,
+          "CPU active (dual)": 70.0,
+          "Camera (OV2640)": 50.0,
+          "PSRAM access": 20.0,
+          "Flash read": 11.5,
+          "TFLite inference": 40.0
+        }
+      },
+      {
+        "scenario": "Inference + Cam",
+        "mode": "max",
+        "total_ma": 265,
+        "power_chip_mw": 874.5,
+        "power_usb_mw": 1028.8,
+        "breakdown": {
+          "Base (LDO + misc)": 30,
+          "CPU active (dual)": 85,
+          "Camera (OV2640)": 60,
+          "PSRAM access": 25,
+          "Flash read": 15,
+          "TFLite inference": 50
+        }
+      },
+      {
+        "scenario": "Full pipeline",
+        "mode": "min",
+        "total_ma": 318,
+        "power_chip_mw": 1049.4,
+        "power_usb_mw": 1234.6,
+        "breakdown": {
+          "Base (LDO + misc)": 20,
+          "CPU active (dual)": 55,
+          "Camera (OV2640)": 40,
+          "WiFi TX (streaming)": 150,
+          "PSRAM access": 15,
+          "Flash read": 8,
+          "TFLite inference": 30
+        }
+      },
+      {
+        "scenario": "Full pipeline",
+        "mode": "typical",
+        "total_ma": 396.5,
+        "power_chip_mw": 1308.4,
+        "power_usb_mw": 1539.4,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0,
+          "CPU active (dual)": 70.0,
+          "Camera (OV2640)": 50.0,
+          "WiFi TX (streaming)": 180.0,
+          "PSRAM access": 20.0,
+          "Flash read": 11.5,
+          "TFLite inference": 40.0
+        }
+      },
+      {
+        "scenario": "Full pipeline",
+        "mode": "max",
+        "total_ma": 475,
+        "power_chip_mw": 1567.5,
+        "power_usb_mw": 1844.1,
+        "breakdown": {
+          "Base (LDO + misc)": 30,
+          "CPU active (dual)": 85,
+          "Camera (OV2640)": 60,
+          "WiFi TX (streaming)": 210,
+          "PSRAM access": 25,
+          "Flash read": 15,
+          "TFLite inference": 50
+        }
+      }
+    ],
+    "fp32_vs_int8": {
+      "FP32": {
+        "scenario": "Inference only",
+        "mode": "typical",
+        "total_ma": 166.5,
+        "power_chip_mw": 549.4,
+        "power_usb_mw": 646.4,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0,
+          "CPU active (dual)": 70.0,
+          "PSRAM access": 20.0,
+          "Flash read": 11.5,
+          "TFLite inference": 40.0
+        }
+      },
+      "INT8": {
+        "scenario": "Inference only",
+        "mode": "typical",
+        "total_ma": 141.5,
+        "power_chip_mw": 466.9,
+        "power_usb_mw": 549.3,
+        "breakdown": {
+          "Base (LDO + misc)": 25.0,
+          "CPU active (dual)": 70.0,
+          "PSRAM access": 20.0,
+          "Flash read": 11.5,
+          "TFLite inference": 40.0
+        },
+        "note": "Estimated 15% reduction from reduced PSRAM bandwidth"
+      }
+    },
+    "ina219_data": null
+  }
+}

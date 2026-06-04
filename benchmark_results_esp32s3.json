@@ -1,0 +1,63 @@
+{
+  "device": "XIAO ESP32S3 Sense",
+  "board": "seeed_xiao_esp32s3",
+  "framework": "Arduino (espressif32)",
+  "cpu_freq": 240,
+  "flash_mb": 8,
+  "psram_mb": 8,
+  "tflite_micro": "espressif/tflite-micro-esp-examples (local)",
+  "model": {
+    "name": "YOLOv8n INT8",
+    "source": "training/quantized/yolov8n_int8.tflite",
+    "size_bytes": 3386338,
+    "size_mb": 3.23,
+    "input_shape": [1, 192, 192, 3],
+    "input_dtype": "INT8 (signed)",
+    "input_scale": 0.003922,
+    "input_zero_point": -128,
+    "output_shape": [1, 84, 756],
+    "output_dtype": "INT8 (signed)",
+    "output_scale": 0.005039,
+    "output_zero_point": -128,
+    "output_elements": 63504
+  },
+  "arena": {
+    "total_bytes": 4194304,
+    "used_bytes": 522380,
+    "utilization_pct": 12.45
+  },
+  "benchmark": {
+    "total_frames": 2,
+    "total_inferences": 2,
+    "benchmark_duration_seconds": 442.06,
+    "total_inference_time_seconds": 438.57,
+    "cpu_load_pct": 99.2,
+    "inference_times_ms": [
+      219319.88,
+      219253.48
+    ],
+    "avg_inference_time_ms": 219286.69,
+    "min_inference_time_ms": 219253.48,
+    "max_inference_time_ms": 219319.88,
+    "overall_fps": 0.0045,
+    "free_heap_before_bytes": 336204,
+    "free_psram_after_bytes": 3930527,
+    "detections": []
+  },
+    "measurement_date": "2026-06-04",
+    "firmware_commit": "HEAD (WDT fix + PSRAM arena + INT8 postprocess)",
+    "wdt_config": "esp_task_wdt_deinit(); init(60, false); add(NULL)",
+    "arena_allocation": "heap_caps_malloc(MALLOC_CAP_SPIRAM, 4MB)",
+    "serial_port": "/dev/cu.usbmodem31201",
+    "notes": [
+      "Inference uses TFLite Micro reference kernels (no ESP-NN optimizations)",
+      "Model is correctly INT8 quantized (signed int8 input/output)",
+      "Output shape [1,84,756] = 756 anchor cells × 84 (4 bbox + 80 COCO scores)",
+      "756 = 36 (stride 32) + 144 (stride 16) + 576 (stride 8) = 6×6 + 12×12 + 24×24",
+      "No detections because synthetic test data (memset 128) used (no camera)",
+      "PSRAM usage stable across multiple inferences (no memory leak)",
+      "Arena utilization only 12.5% — could reduce arena to ~600KB",
+      "TWDT was root cause of boot-loop; fixed with esp_task_wdt_deinit/reinit",
+      "1MB arena was insufficient (AllocateTensors hung/DCHECK); 4MB heap_caps_malloc succeeded"
+    ]
+}

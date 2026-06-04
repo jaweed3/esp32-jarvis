@@ -1,0 +1,46 @@
+RescueVision Edge — ESP32-S3 INT8 Benchmark Summary
+===================================================
+Date: 2026-06-04
+Device: XIAO ESP32S3 Sense (seeed_xiao_esp32s3)
+CPU: 240 MHz | Flash: 8 MB | PSRAM: 8 MB
+Framework: Arduino (espressif32) + TFLite Micro (espressif fork)
+
+Model: YOLOv8n INT8 (signed int8)
+----------------------------------
+Input:  [1, 192, 192, 3] INT8 (scale=0.003922, zp=-128)
+Output: [1, 84, 756] INT8 (scale=0.005039, zp=-128)
+Size:   3,386,338 bytes (3.23 MB)
+Arena:  522,380 / 4,194,304 bytes used (12.45%)
+
+Benchmark Results
+-----------------
+Total inferences:      2
+Total duration:        442.06 s
+Total inference time:  438.57 s
+CPU load:              99.2%
+
+Inference Latency
+-----------------
+Average:  219,286.69 ms  (219.3 s)
+Min:      219,253.48 ms  (219.3 s)
+Max:      219,319.88 ms  (219.3 s)
+
+Throughput
+----------
+Overall FPS: 0.0045
+Minutes per frame: ~3.66
+
+Memory
+------
+Free heap after:         336,204 bytes
+Free PSRAM after:      3,930,527 bytes (~3.75 MB)
+PSRAM usage stable:     YES (no leak across 2 inferences)
+
+Key Findings
+------------
+1. Model correctly quantized to INT8 (signed int8, not FLOAT32 as previously thought)
+2. Inference time ~219s due to TFLite Micro reference kernels (no ESP-NN integration)
+3. Only 12.5% arena utilization — can reduce arena to ~600KB
+4. PSRAM usage stable — no memory leak
+5. No detections with synthetic test data (no camera)
+6. Reference kernels are the bottleneck — ESP-NN could dramatically improve latency
