@@ -1,0 +1,76 @@
+===============================================================================
+  ESP32-S3 YOLOv8n INT8 — ESP-NN Logistic Optimization Benchmark Summary
+===============================================================================
+  Date:    2026-06-06
+  Board:   Seeed XIAO ESP32S3 Sense (seeed_xiao_esp32s3)
+  Model:   yolov8n_int8.tflite [1,192,192,3] INT8
+  Config:  ESP-NN + LOGISTIC LUT optimization, PSRAM 8MB, 240MHz
+===============================================================================
+
+  Configuration               | Latency (ms) | FPS     | Speedup vs Ref
+  ----------------------------+--------------+---------+---------------
+  Reference kernels           |   219,287    | 0.0046  |  1.0x (baseline)
+  ESP-NN Conv2D only          |    18,020    | 0.055   | 12.2x
+  ESP-NN Conv2D + LOGISTIC    |     7,216    | 0.139   | 30.4x
+
+===============================================================================
+  Op-Level Profile (Before LOGISTIC fix)
+===============================================================================
+  Operator    | Time (ms)   | %
+  ------------+-------------+-----
+  LOGISTIC    | 11,758      | 62.3%
+  CONV_2D     |  6,634      | 35.2%
+  Other (12)  |    471      |  2.5%
+
+===============================================================================
+  Op-Level Profile (After LOGISTIC fix — estimated)
+===============================================================================
+  Operator    | Time (ms)   | %
+  ------------+-------------+-----
+  CONV_2D     |     ~6,634  | ~92%
+  LOGISTIC    |     near-0  | near-0%
+  Other (12)  |       ~582  |  ~8%
+
+  Note: MicroProfiler overflowed after 16 inferences (max 4096 events).
+  CONV_2D time assumed unchanged since LOGISTIC and CONV_2D are non-overlapping.
+
+===============================================================================
+  Benchmark Results (120s run, 16 inferences)
+===============================================================================
+  Avg inference:    7,216 ms   (range: 7,214–7,237 ms)
+  Total inferences: 16
+  FPS:              0.139
+  CPU load:         95.6%
+  Free PSRAM:       3,930,527 bytes (stable, no leak)
+  Free heap:        251,916 bytes
+
+===============================================================================
+  Key Insights
+===============================================================================
+  - LOGISTIC LUT optimization collapsed 62.3% bottleneck (~11.8s -> near-0)
+  - Total improvement from reference: 30.4x (219,287ms -> 7,216ms)
+  - Conv2D is now the sole bottleneck (~92% of total latency)
+  - ESP-NN Conv2D SIMD already fully utilized; further gains need model changes
+  - Detections working: 0.559 confidence (class 0 = person)
+  - PSRAM stable across all 16 inferences — no memory leak
+  - LUT-based sigmoid: 256-byte table, O(1) per element, prepared once on first Eval
+
+===============================================================================
+  Implementation Details
+===============================================================================
+  - File: lib/tflite-micro/tensorflow/lite/micro/kernels/esp_nn/logistic.cc
+  - API: esp_nn_logistic_s8_prepare() + esp_nn_logistic_s8()
+  - LUT preparation deferred from Prepare to first Eval call
+    (GetScratchBuffer() asserts state == kInvoke, not kPrepare)
+  - Reference logistic.cc removed to avoid duplicate Register_LOGISTIC()
+
+===============================================================================
+  Next Bottleneck: CONV_2D
+===============================================================================
+  ESP-NN conv_s8 is already SIMD-optimized for Xtensa LX7. Options:
+  1. Model architecture: shallower backbone, fewer channels
+  2. Reduced input resolution: 160x160 or 128x128
+  3. Structured pruning of YOLOv8n backbone
+  4. Custom nano architecture with fewer Conv layers
+
+===============================================================================

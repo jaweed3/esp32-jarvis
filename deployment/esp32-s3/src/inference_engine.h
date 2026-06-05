@@ -4,6 +4,10 @@
 #include <cstddef>
 #include <cstdint>
 
+namespace tflite {
+class MicroProfilerInterface;
+}
+
 class InferenceEngine {
 public:
     InferenceEngine();
@@ -24,6 +28,10 @@ public:
 
     void printModelInfo();
 
+    // Profiling
+    void setProfiler(tflite::MicroProfilerInterface* profiler) { m_profiler = profiler; }
+    void printOpProfile();
+
 private:
     void* m_interpreter = nullptr;
     void* m_tensor_arena = nullptr;
@@ -37,12 +45,13 @@ private:
     int m_input_channels = 3;
     int m_output_size = 0;
 
-    // Performance
     unsigned long m_last_inference_us = 0;
     unsigned long m_total_inference_us = 0;
     int m_inference_count = 0;
     int m_fps_counter = 0;
     unsigned long m_fps_last_reset = 0;
+
+    tflite::MicroProfilerInterface* m_profiler = nullptr;
 };
 
 #endif // INFERENCE_ENGINE_H

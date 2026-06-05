@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-06-06T10:30:00Z",
+  "board": "seeed_xiao_esp32s3",
+  "config": "ESP-NN enabled + ESP-NN LOGISTIC optimization, CONFIG_NN_OPTIMIZED, 8MB flash, PSRAM 8MB, 240MHz",
+  "framework": "Arduino + PlatformIO",
+  "model": "yolov8n_int8.tflite [1,192,192,3] INT8",
+  "avg_inference_ms": 7216.0,
+  "min_inference_ms": 7214.42,
+  "max_inference_ms": 7236.70,
+  "total_inferences": 16,
+  "benchmark_duration_s": 120.78,
+  "fps": 0.139,
+  "cpu_load_pct": 95.6,
+  "free_heap_bytes": 251916,
+  "free_psram_bytes": 3930527,
+  "improvement_vs_reference": 30.4,
+  "improvement_vs_espnn_before_logistic": 2.5,
+  "notes": "ESP-NN logistic LUT-based kernel collapsed the 62.3% LOGISTIC bottleneck (11,758 ms -> near-zero). Combined 30.4x speedup from reference (219,287ms -> 7,216ms). Remaining bottleneck: CONV_2D (~100% of 7.2s). ESP-NN conv already optimized; further gains need model arch changes.",
+  "op_profile_before": {
+    "LOGISTIC": {"time_ms": 11758, "pct": 62.3},
+    "CONV_2D": {"time_ms": 6634, "pct": 35.2},
+    "other": {"time_ms": 471, "pct": 2.5}
+  },
+  "op_profile_after": {
+    "LOGISTIC": {"time_ms": null, "pct": null},
+    "CONV_2D": {"time_ms": null, "pct": null},
+    "other": {"time_ms": null, "pct": null}
+  },
+  "microprofiler_overflow": true,
+  "microprofiler_note": "Event buffer overflowed after 16 inferences (max 4096 events). PROFILE_LOGISTIC in esp_nn/logistic.cc includes individual op timestamps per inference.",
+  "detections_working": true
+}

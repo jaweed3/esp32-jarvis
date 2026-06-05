@@ -2,6 +2,7 @@
 #include "model_data.h"
 
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_profiler.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/system_setup.h"
 #include "tensorflow/lite/schema/schema_generated.h"
@@ -80,7 +81,8 @@ bool InferenceEngine::begin() {
   Serial.printf("Tensor arena: %d bytes in PSRAM\n", kTensorArenaSize);
 
   Serial.println("Creating interpreter...");
-  m_interpreter = new tflite::MicroInterpreter(model, resolver, tensor_arena, kTensorArenaSize);
+  m_interpreter = new tflite::MicroInterpreter(model, resolver, tensor_arena, kTensorArenaSize,
+      /*resource_variables=*/nullptr, m_profiler);
   if (!m_interpreter) {
     Serial.println("Interpreter creation FAILED");
     return false;
@@ -222,4 +224,14 @@ void InferenceEngine::printModelInfo() {
   else if (output->type == kTfLiteFloat32) Serial.println("FLOAT32");
   else Serial.println(output->type);
   Serial.println("------------------");
+}
+
+void InferenceEngine::printOpProfile() {
+#if !defined(TF_LITE_STRIP_ERROR_STRINGS)
+  if (m_profiler) {
+    Serial.println("--- Op Profile (micros per tag) ---");
+    static_cast<tflite::MicroProfiler*>(m_profiler)->LogTicksPerTagCsv();
+    Serial.println("--- End Op Profile ---");
+  }
+#endif
 }

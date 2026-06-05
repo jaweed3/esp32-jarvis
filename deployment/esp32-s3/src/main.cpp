@@ -23,6 +23,7 @@
 #include "inference_engine.h"
 #include "detection_postprocess.h"
 #include "performance_monitor.h"
+#include "tensorflow/lite/micro/micro_profiler.h"
 
 // ============================================================
 // Pin Configuration (XIAO ESP32S3 Sense)
@@ -61,8 +62,10 @@ static constexpr int kPrintInterval = 5;      // Print results every N seconds
 InferenceEngine g_engine;
 DetectionPostprocess g_postproc;
 PerformanceMonitor g_perf;
+tflite::MicroProfiler g_profiler;
 static bool g_has_camera = false;
 static bool g_has_model = false;
+static bool g_profile_printed = false;
 
 // ============================================================
 // Camera Helpers
@@ -232,7 +235,8 @@ void setup() {
     }
     Serial.println();
 
-    // Initialize ML engine
+    // Initialize ML engine with profiler
+    g_engine.setProfiler(&g_profiler);
     g_has_model = g_engine.begin();
     if (!g_has_model) {
         Serial.println("FATAL: Model initialization failed");
@@ -283,6 +287,11 @@ void loop() {
 
     g_perf.endFrame();
     printDetectionResults(detections, inference_us);
+
+    if (!g_profile_printed) {
+        g_profile_printed = true;
+        g_engine.printOpProfile();
+    }
 
     static unsigned long last_report = 0;
     unsigned long now = millis();

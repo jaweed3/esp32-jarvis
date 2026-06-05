@@ -30,3 +30,6 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# Third-party lib (esp-nn, tflite-micro) — recreated via setup instructions in AGENTS.md
+deployment/esp32-s3/lib/

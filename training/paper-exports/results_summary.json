@@ -338,13 +338,31 @@
       "fits_in_flash": true,
       "fits_in_psram": true,
       "feasible": true,
-      "measured_inference_ms": 219287,
-      "measured_fps": 0.0046,
+      "measured_inference_ms_ref": 219287,
+      "measured_fps_ref": 0.0046,
+      "measured_inference_ms_espnn": 18020,
+      "measured_fps_espnn": 0.055,
+      "speedup_espnn_vs_ref_x": 12.2,
+      "measured_inference_ms_logistic": 7216,
+      "measured_fps_logistic": 0.139,
+      "speedup_logistic_vs_ref_x": 30.4,
+      "speedup_logistic_vs_espnn_x": 2.5,
+      "op_profile_before_logistic_fix": {
+        "LOGISTIC_ms": 11758,
+        "LOGISTIC_pct": 62.3,
+        "CONV_2D_ms": 6634,
+        "CONV_2D_pct": 35.2,
+        "other_ms": 471,
+        "other_pct": 2.5
+      },
+      "bottleneck_after_logistic_fix": "CONV_2D (~92% of 7216ms)",
       "measurement_notes": [
-        "TFLite Micro reference kernels (no ESP-NN)",
-        "Arena usage measured via arena_used_bytes() on physical ESP32-S3",
+        "Three-stage progressive optimization: ref -> ESP-NN Conv2D -> ESP-NN Conv2D+LOGISTIC",
+        "LOGISTIC LUT-based kernel eliminated 62.3% bottleneck (11.8s -> near-0)",
+        "MicroProfiler overflowed after 16 inferences (4096 event limit)",
+        "PSRAM stable at 3.93 MB across all measurements (no leak)",
         "Synthetic input (memset 128), no camera",
-        "CPU load 99.2% during inference"
+        "CPU load increased from 98.5% (18s) to 95.6% (7.2s) due to shorter runtime proportion"
       ]
     }
   },

@@ -1,0 +1,48 @@
+================================================================================
+  ESP32-S3 YOLOv8n INT8 — ESP-NN Optimization Benchmark Summary
+================================================================================
+  Date:    2026-06-06
+  Board:   Seeed XIAO ESP32S3 Sense (seeed_xiao_esp32s3)
+  Model:   yolov8n_int8.tflite [1,192,192,3] INT8
+  Config:  ESP-NN enabled, CONFIG_NN_OPTIMIZED, PSRAM 8MB, 240MHz
+================================================================================
+
+  Before (Reference Kernels) | After (ESP-NN) | Speedup
+  ---------------------------+----------------+--------
+  Avg:    219,287 ms         | 18,020 ms     | 12.2x
+  FPS:    0.0045             | 0.055         | 12.2x
+  PSRAM:  3.93 MB            | 3.93 MB       | 1.0x (stable)
+  CPU:    99.2%              | 98.5%         | slightly lower
+  Frames: 2 in 300s          | 17 in 300s    | 8.5x
+
+================================================================================
+  Key Insights
+================================================================================
+  - ESP-NN Xtensa LX7 SIMD optimized Conv2D works (esp_nn_conv_s8)
+  - 12x speedup is good but not the 40-100x expected theoretical max
+  - Bottlenecks remain: Reshape, Concatenation, ResizeBilinear, non-ESP-NN ops
+  - Some Conv2D layers may use dilation > 1 → fallback to reference ConvPerChannel
+  - PSRAM bandwidth (80-100ns/access) still a limiting factor
+  - No memory leak: PSRAM stable at 3.93 MB across all 17 inferences
+
+================================================================================
+  Build Config
+================================================================================
+  - platformio.ini: -DESP_NN -DCONFIG_NN_OPTIMIZED
+  - Libraries: lib/esp-nn/ (cloned from espressif/esp-nn v1.2.3)
+  - Reference kernels removed: conv.cc, depthwise_conv.cc, fully_connected.cc,
+    pooling.cc, softmax.cc, add.cc, mul.cc (replaced by esp_nn/ variants)
+  - ESP32-P4 files excluded (RISC-V assembly incompatible with Xtensa)
+  - Flash: 3,844,233 bytes (46.6%)
+  - RAM:   26,880 bytes (8.2%)
+
+================================================================================
+  For Next Iteration
+================================================================================
+  - Profile which ops consume the most time in the 18s budget
+  - Check YOLOv8n backbone for dilated convolutions (dilation > 1 falls back)
+  - Manually patch non-ESP-NN ops (Reshape/Concat are pure data movement)
+  - Camera integration (OV2640) now feasible at ~0.05 FPS
+  - Arena size 522KB (verify unchanged)
+
+================================================================================

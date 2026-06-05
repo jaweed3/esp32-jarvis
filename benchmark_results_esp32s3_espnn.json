@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-06-06T05:30:00Z",
+  "board": "seeed_xiao_esp32s3",
+  "config": "ESP-NN enabled, CONFIG_NN_OPTIMIZED, 8MB flash, PSRAM 8MB, 240MHz",
+  "framework": "Arduino + PlatformIO",
+  "model": "yolov8n_int8.tflite [1,192,192,3] INT8",
+  "avg_inference_ms": 18020.03,
+  "min_inference_ms": 18006.20,
+  "max_inference_ms": 18042.53,
+  "total_inferences": 17,
+  "benchmark_duration_s": 311.02,
+  "fps": 0.055,
+  "cpu_load_pct": 98.5,
+  "free_heap_bytes": 336116,
+  "free_psram_bytes": 3930527,
+  "improvement_vs_reference": 12.17,
+  "notes": "12.2x speedup over reference kernels (219287ms -> 18020ms). ESP-NN Conv2D SIMD ops working. Bottleneck: non-ESP-NN ops (Reshape, Concatenation, etc.) + possible dilated conv fallback to reference."
+}
