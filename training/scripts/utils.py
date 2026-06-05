@@ -191,6 +191,22 @@ def letterbox_imgsz(model: YOLO) -> int:
         return 640
 
 
+def nms(boxes, scores, iou_thresh=0.5):
+    """Greedy NMS for a single image."""
+    if len(boxes) == 0:
+        return np.array([], dtype=int)
+    order = np.argsort(-scores)
+    keep = []
+    while len(order) > 0:
+        i = order[0]
+        keep.append(i)
+        if len(order) == 1:
+            break
+        ious = np.array([bbox_iou(boxes[i], boxes[j]) for j in order[1:]])
+        order = order[1:][ious < iou_thresh]
+    return np.array(keep)
+
+
 def postprocess_yolo_output(output, conf_thresh, imgsz):
     """Minimal YOLO output post-processing (single-class person detection).
     Handles both (84, N) multi-class and (5, N) single-class formats."""
@@ -218,13 +234,16 @@ def postprocess_yolo_output(output, conf_thresh, imgsz):
     scores = person_scores[mask]
 
     cx, cy, w, h = boxes
-    x1 = cx - w / 2
-    y1 = cy - h / 2
-    x2 = cx + w / 2
-    y2 = cy + h / 2
+    x1 = (cx - w / 2) * imgsz
+    y1 = (cy - h / 2) * imgsz
+    x2 = (cx + w / 2) * imgsz
+    y2 = (cy + h / 2) * imgsz
     boxes = np.stack([x1, y1, x2, y2], axis=1)
 
-    return boxes, scores, np.zeros(len(scores))
+    keep = nms(boxes, scores, iou_thresh=0.5)
+    if len(keep) == 0:
+        return np.array([]), np.array([]), np.array([])
+    return boxes[keep], scores[keep], np.zeros(len(keep))
 
 
 def class_labels_for_sar() -> List[str]:

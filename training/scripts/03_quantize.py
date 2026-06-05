@@ -62,7 +62,18 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
     output_details = interpreter.get_output_details()
 
     input_dtype = input_details[0]["dtype"]
-    calib_images = (val_images * 255).astype(np.uint8) if input_dtype == np.uint8 else val_images.astype(np.float32)
+    input_quant = input_details[0].get("quantization", (1.0, 0))
+    if input_dtype == np.uint8:
+        calib_images = (val_images * 255).astype(np.uint8)
+    elif input_dtype == np.int8:
+        in_scale, in_zp = input_quant
+        if in_scale is None or in_scale == 0:
+            in_scale = 1.0
+        if in_zp is None:
+            in_zp = 0
+        calib_images = np.clip(val_images / in_scale + in_zp, -128, 127).astype(np.int8)
+    else:
+        calib_images = val_images.astype(np.float32)
 
     output_dtype = output_details[0]["dtype"]
     output_quant = output_details[0].get("quantization", (0, 0))
@@ -80,7 +91,7 @@ def evaluate_tflite(tflite_path: Path, val_images: np.ndarray,
         latencies.append(elapsed * 1000)
 
         output = interpreter.get_tensor(output_details[0]["index"])
-        if output_dtype == np.uint8:
+        if output_dtype in (np.uint8, np.int8):
             scale, zp = output_quant
             if scale is not None and zp is not None:
                 output = (output.astype(np.float32) - zp) * scale
