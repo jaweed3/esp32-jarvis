@@ -2,6 +2,7 @@
 \usepackage{graphicx,booktabs,caption,hyperref,geometry}
 \geometry{margin=0.75in}
 \hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\usepackage{cite}
 
 \title{RescueVision Edge: 8-bit Quantized YOLOv8n for Victim Detection on ESP32-S3 -- Feasibility and Memory Characterization}
 \author{Jaweed \textit{et~al.}}
@@ -17,11 +18,11 @@ We present RescueVision Edge, a person detection system for disaster search-and-
 \section{Introduction}
 \label{sec:intro}
 
-Disaster search-and-rescue (SAR) operations require rapid victim localization under extreme conditions---collapsed structures, low visibility, and damaged infrastructure. Deep learning-based object detectors achieve state-of-the-art accuracy but typically rely on GPU-class hardware that is power-hungry, bulky, and unsuitable for UAV-mounted deployment.
+Disaster search-and-rescue (SAR) operations require rapid victim localization under extreme conditions---collapsed structures, low visibility, and damaged infrastructure~\cite{zhang2022victim}. Deep learning-based object detectors achieve state-of-the-art accuracy but typically rely on GPU-class hardware that is power-hungry, bulky, and unsuitable for UAV-mounted deployment.
 
 Microcontrollers (MCUs) offer an attractive alternative: they are cheap, low-power, and widely available. The ESP32-S3, in particular, provides 240 MHz dual-core processing, 8 MB flash, and 8 MB PSRAM at under \$10. However, fitting a neural network into its constrained memory while maintaining useful accuracy is a significant challenge.
 
-In this work, we explore the feasibility of deploying a quantized YOLOv8n~\cite{ultralytics} person detector on the ESP32-S3 for SAR victim detection. Our key contributions are:
+In this work, we explore the feasibility of deploying a quantized YOLOv8n~\cite{ultralytics} person detector on the ESP32-S3 for SAR victim detection. The YOLO family~\cite{yolov1,yolov3,yolov4} has evolved from a unified real-time detector to a robust object detection framework; its nano variant is specifically designed for resource-constrained deployment. Our key contributions are:
 
 \begin{enumerate}
   \item A complete pipeline for training, quantizing, and evaluating a single-class YOLOv8n model on a COCO person subset at 192$\times$192 resolution, reducing the model from 5.91 MB (FP32 PyTorch, 45.59\% mAP@0.5) to 3.23 MB (INT8 TFLite, 4.41\% mAP@0.5).
@@ -33,7 +34,7 @@ In this work, we explore the feasibility of deploying a quantized YOLOv8n~\cite{
 \section{Related Work}
 \label{sec:related}
 
-Deploying CNNs on microcontrollers has gained significant attention. YOLO~\cite{ultralytics} remains the dominant real-time detector; its nano variant (YOLOv8n) is specifically designed for resource-constrained deployment with 3.0M parameters. Prior work on MCU-based detection includes TinyML implementations of MobileNet-SSD~\cite{tinyml} and quantized YOLO variants~\cite{edgeyolo}. However, most studies evaluate at 320$\times$320 or higher resolutions and target ARM Cortex-M class devices. The ESP32-S3 with its dual-core Xtensa LX7 and hardware vector extensions remains underexplored for YOLO-based SAR applications.
+Deploying CNNs on microcontrollers has gained significant attention~\cite{mcunet,micronets,cmsisnn}. YOLO~\cite{yolov1,yolov3,yolov4,ultralytics} remains the dominant real-time detector; its nano variant (YOLOv8n) is specifically designed for resource-constrained deployment with 3.0M parameters. Prior work on MCU-based detection includes TinyML implementations of MobileNet-SSD~\cite{tinyml,mobilenets,mobilenetv2} and quantized YOLO variants~\cite{edgeyolo}. However, most studies evaluate at 320$\times$320 or higher resolutions and target ARM Cortex-M class devices~\cite{banbury2020bench}. The ESP32-S3 with its dual-core Xtensa LX7 and hardware vector extensions remains underexplored for YOLO-based SAR applications.
 
 To our knowledge, this is the first work to evaluate INT8-quantized YOLOv8n at 192$\times$192 on the ESP32-S3 specifically for disaster victim detection, including full power estimation and memory feasibility analysis.
 
@@ -58,7 +59,7 @@ The PyTorch baseline achieves 45.59\% mAP@0.5 at 192$\times$192 (Table~\ref{tab:
 \section{Post-Training Quantization}
 \label{sec:quantization}
 
-Post-training quantization (PTQ) converts the FP32 TFLite model to INT8 using a representative dataset of 200 calibration images drawn from the validation set. We use TensorFlow Lite's default quantization with INT8 inference type and uint8 input/output tensors. Table~\ref{tab:quantization} compares all three model variants: the PyTorch baseline, the TFLite FP32, and the TFLite INT8.
+Post-training quantization (PTQ)~\cite{jacob2018,krishnamoorthi2018,gholami2021survey} converts the FP32 TFLite model to INT8 using a representative dataset of 200 calibration images drawn from the validation set. We use TensorFlow Lite's default quantization with INT8 inference type and uint8 input/output tensors. Table~\ref{tab:quantization} compares all three model variants: the PyTorch baseline, the TFLite FP32, and the TFLite INT8.
 
 \input{tables/quantization_comparison.tex}
 
@@ -73,7 +74,7 @@ The FP32 TFLite model achieves 12.26\% mAP@0.5 on the COCO person validation set
 \subsection{Latency and Throughput}
 Table~\ref{tab:resolution} reports latency benchmarks on an RTX 3060 (12 GB). The INT8 model achieves 421.6 FPS versus 342.8 FPS for FP32---a 1.23$\times$ speedup. The speedup is modest because TFLite's XNNPACK delegate provides efficient FP32 inference on x86 CPUs, and the INT8 model benefits primarily from reduced memory bandwidth rather than computational savings.
 
-On the physical ESP32-S3 (240 MHz dual-core, TFLite Micro with ESP-NN optimizations), the INT8 model was benchmarked through a progressive optimization process. Initially, the naive reference TFLite Micro kernels required 219.3 s per inference. Enabling ESP-NN SIMD-optimized Conv2D kernels (via the Xtensa LX7 vector extensions) reduced latency to 18.0 s (12.2$\times$ speedup). Op-level profiling with TFLite Micro's \texttt{MicroProfiler} revealed that the LOGISTIC (sigmoid) activation function consumed 62.3\% of the total latency (11,758 ms), while Conv2D consumed 35.2\% (6,634 ms). The LOGISTIC operator was not yet covered by ESP-NN's kernel set and was executing via the naive reference implementation.
+On the physical ESP32-S3~\cite{esp32s3} (240 MHz dual-core, TFLite Micro with ESP-NN~\cite{espnn} optimizations), the INT8 model was benchmarked through a progressive optimization process. Initially, the naive reference TFLite Micro kernels required 219.3 s per inference. Enabling ESP-NN SIMD-optimized Conv2D kernels (via the Xtensa LX7 vector extensions) reduced latency to 18.0 s (12.2$\times$ speedup). Op-level profiling with TFLite Micro's \texttt{MicroProfiler} revealed that the LOGISTIC (sigmoid) activation function consumed 62.3\% of the total latency (11,758 ms), while Conv2D consumed 35.2\% (6,634 ms). The LOGISTIC operator was not yet covered by ESP-NN's kernel set and was executing via the naive reference implementation.
 
 To address this, we implemented an ESP-NN LOGISTIC wrapper kernel using the LUT-based sigmoid approximation provided by \texttt{esp\_nn\_logistic\_s8()}, which evaluates the sigmoid function via a 256-byte lookup table in O(1) per element. After this optimization, inference latency dropped to 7,216 ms---a further 2.5$\times$ improvement, yielding a combined 30.4$\times$ speedup from the reference baseline. At this point, Conv2D accounts for approximately 92\% of the remaining latency; the LOGISTIC overhead has been effectively eliminated. Table~\ref{tab:resolution} summarizes the progressive optimization results, and Table~\ref{tab:platform} provides the cross-platform comparison.
 
@@ -144,11 +145,6 @@ The primary limitation is the modest absolute accuracy of 4.41\% mAP@0.5 at 192$
 \subsection{Future Work}
 Now that inference latency has been reduced to 7.2 s and the remaining bottleneck is Conv2D computation (already running ESP-NN SIMD-optimized kernels), the next steps shift toward model-level optimizations: (i) exploring shallower YOLO backbones (e.g., YOLOv3-tiny, custom nano architectures) or structured pruning to reduce Conv2D FLOPs; (ii) evaluating resolution-accuracy trade-offs at 160$\times$160 and 128$\times$128 to reduce input dimension; (iii) integrating the OV2640 camera with JPEG-to-RGB conversion for end-to-end pipeline testing on physical hardware; (iv) measuring empirical power consumption with an INA219 current sensor; and (v) collecting a custom SAR-specific dataset (victims under rubble, low-light conditions) to improve domain relevance.
 
-\begin{thebibliography}{5}
-\bibitem{ultralytics} G. Jocher, A. Chaurasia, and J. Qiu, ``Ultralytics YOLO,'' 2023. \url{https://github.com/ultralytics/ultralytics}
-\bibitem{coco} T.-Y. Lin et al., ``Microsoft COCO: Common Objects in Context,'' in \textit{ECCV}, 2014.
-\bibitem{tflitemicro} R. David et al., ``TensorFlow Lite Micro: Embedded Machine Learning on TinyML Systems,'' in \textit{Proc. MLSys}, 2021.
-\bibitem{tinyml} P. Warden and D. Situnayake, \textit{TinyML: Machine Learning with TensorFlow Lite on Arduino and Ultra-Low-Power Microcontrollers}. O'Reilly, 2019.
-\bibitem{edgeyolo} S. Xu et al., ``Edge-YOLO: Real-Time Object Detection on Edge Devices,'' 2022.
-\end{thebibliography}
+\bibliographystyle{ieeetr}
+\bibliography{refs}
 \end{document}

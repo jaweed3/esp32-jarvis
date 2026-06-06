@@ -1,0 +1,173 @@
+% ===== EXISTING REFERENCES (from original paper) =====
+
+@misc{ultralytics,
+  author = {Glenn Jocher and Ayush Chaurasia and Jing Qiu},
+  title = {{Ultralytics YOLO}},
+  year = {2023},
+  howpublished = {\url{https://github.com/ultralytics/ultralytics}}
+}
+
+@inproceedings{coco,
+  author = {Tsung-Yi Lin and Michael Maire and Serge Belongie and James Hays and Pietro Perona and Deva Ramanan and Piotr Doll{\'a}r and C. Lawrence Zitnick},
+  title = {{Microsoft COCO}: Common Objects in Context},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year = {2014}
+}
+
+@inproceedings{tflitemicro,
+  author = {Robert David and Jared Duke and Advait Jain and Vijay Janapa Reddi and Nat Jeffries and Jian Li and Nick Kreeger and Ian Nappier and Meghna Natraj and Shlomi Regev and Rocky Rhodes and Tiezhen Wang and Pete Warden},
+  title = {{TensorFlow Lite Micro}: Embedded Machine Learning on {TinyML} Systems},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year = {2021}
+}
+
+@book{tinyml,
+  author = {Pete Warden and Daniel Situnayake},
+  title = {{TinyML}: Machine Learning with {TensorFlow Lite} on {Arduino} and Ultra-Low-Power Microcontrollers},
+  publisher = {O'Reilly Media},
+  year = {2019}
+}
+
+@article{edgeyolo,
+  author = {Shuai Xu and Haotian Luo and Linfeng Du and Wenxuan Shan and Jun Cheng},
+  title = {{Edge-YOLO}: Real-Time Object Detection on Edge Devices},
+  journal = {arXiv preprint arXiv:2209.13083},
+  year = {2022}
+}
+
+% ===== YOLO FAMILY =====
+
+@inproceedings{yolov1,
+  author = {Joseph Redmon and Santosh Divvala and Ross Girshick and Ali Farhadi},
+  title = {You Only Look Once: Unified, Real-Time Object Detection},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year = {2016},
+  pages = {779--788},
+  doi = {10.1109/CVPR.2016.91}
+}
+
+@article{yolov3,
+  author = {Joseph Redmon and Ali Farhadi},
+  title = {{YOLOv3}: An Incremental Improvement},
+  journal = {arXiv preprint arXiv:1804.02767},
+  year = {2018}
+}
+
+@article{yolov4,
+  author = {Alexey Bochkovskiy and Chien-Yao Wang and Hong-Yuan Mark Liao},
+  title = {{YOLOv4}: Optimal Speed and Accuracy of Object Detection},
+  journal = {arXiv preprint arXiv:2004.10934},
+  year = {2020}
+}
+
+% ===== QUANTIZATION =====
+
+@inproceedings{jacob2018,
+  author = {Benoit Jacob and Skirmantas Kligys and Bo Chen and Menglong Zhu and Matthew Tang and Andrew Howard and Hartwig Adam and Dmitry Kalenichenko},
+  title = {Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year = {2018},
+  pages = {2704--2713},
+  doi = {10.1109/CVPR.2018.00286}
+}
+
+@article{krishnamoorthi2018,
+  author = {Raghuraman Krishnamoorthi},
+  title = {Quantizing Deep Convolutional Networks for Efficient Inference: A Whitepaper},
+  journal = {arXiv preprint arXiv:1806.08342},
+  year = {2018}
+}
+
+@article{gholami2021survey,
+  author = {Amir Gholami and Sehoon Kim and Zhen Dong and Zhewei Yao and Michael W. Mahoney and Kurt Keutzer},
+  title = {A Survey of Quantization Methods for Efficient Neural Network Inference},
+  journal = {arXiv preprint arXiv:2103.13630},
+  year = {2021}
+}
+
+% ===== TINYML / MCU DEPLOYMENT =====
+
+@inproceedings{mcunet,
+  author = {Ji Lin and Wei-Ming Chen and Yujun Lin and John Cohn and Chuang Gan and Song Han},
+  title = {{MCUNet}: Tiny Deep Learning on IoT Devices},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year = {2020}
+}
+
+@article{cmsisnn,
+  author = {Liangzhen Lai and Naveen Suda and Vikas Chandra},
+  title = {{CMSIS-NN}: Efficient Neural Network Kernels for {Arm} {Cortex-M} {CPUs}},
+  journal = {arXiv preprint arXiv:1801.06601},
+  year = {2018}
+}
+
+@inproceedings{micronets,
+  author = {Colby Banbury and Chuteng Zhou and Igor Fedorov and Ramon Matas and Urmish Thakker and Dibakar Gope and Vijay Janapa Reddi and Matthew Mattina and Paul Whatmough},
+  title = {{MicroNets}: Neural Network Architectures for Deploying {TinyML} Applications on Commodity Microcontrollers},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year = {2021}
+}
+
+% ===== EFFICIENT CNN ARCHITECTURES =====
+
+@article{mobilenets,
+  author = {Andrew G. Howard and Menglong Zhu and Bo Chen and Dmitry Kalenichenko and Weijun Wang and Tobias Weyand and Marco Andreetto and Hartwig Adam},
+  title = {{MobileNets}: Efficient Convolutional Neural Networks for Mobile Vision Applications},
+  journal = {arXiv preprint arXiv:1704.04861},
+  year = {2017}
+}
+
+@inproceedings{mobilenetv2,
+  author = {Mark Sandler and Andrew Howard and Menglong Zhu and Andrey Zhmoginov and Liang-Chieh Chen},
+  title = {{MobileNetV2}: Inverted Residuals and Linear Bottlenecks},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year = {2018},
+  pages = {4510--4520},
+  doi = {10.1109/CVPR.2018.00474}
+}
+
+@inproceedings{deepcompression,
+  author = {Song Han and Huizi Mao and William J. Dally},
+  title = {Deep Compression: Compressing Deep Neural Networks with Pruning, Trained Quantization and {Huffman} Coding},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year = {2016}
+}
+
+% ===== ESPRESSIF / HARDWARE =====
+
+@misc{espnn,
+  author = {{Espressif Systems}},
+  title = {{ESP-NN}: Optimised Neural Network Functions for {Espressif} Chips},
+  year = {2023},
+  howpublished = {\url{https://github.com/espressif/esp-nn}}
+}
+
+@misc{esp32s3,
+  author = {{Espressif Systems}},
+  title = {{ESP32-S3} Series Datasheet},
+  year = {2024},
+  note = {Version 1.8},
+  howpublished = {\url{https://www.espressif.com/}}
+}
+
+% ===== SEARCH AND RESCUE / UAV =====
+
+@article{zhang2022victim,
+  author = {Ning Zhang and Francesco Nex and George Vosselman and Norman Kerle},
+  title = {Training a Disaster Victim Detection Network for {UAV} Search and Rescue Using Harmonious Composite Images},
+  journal = {Remote Sensing},
+  volume = {14},
+  number = {13},
+  pages = {2977},
+  year = {2022},
+  doi = {10.3390/rs14132977}
+}
+
+% ===== BENCHMARKS =====
+
+@article{banbury2020bench,
+  author = {Colby Banbury and Vijay Janapa Reddi and Max Lam and William Fu and Amin Fazel and Jeremy Holleman and Xinyuan Huang and Robert Amelio and Dmitry Kang and Anant Sujathan and others},
+  title = {Benchmarking {TinyML} Systems: Challenges and Direction},
+  journal = {arXiv preprint arXiv:2003.04821},
+  year = {2020}
+}
