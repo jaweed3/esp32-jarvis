@@ -1,0 +1,154 @@
+\documentclass[10pt,twocolumn]{article}
+\usepackage{graphicx,booktabs,caption,hyperref,geometry}
+\usepackage{cite}
+\geometry{margin=0.75in}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\title{Benchmark dan Analisis Deployment YOLOv8n INT8 pada ESP32-S3: Optimasi Progressive Berbasis Profil Operasi}
+
+\author{Jaweed\textsuperscript{1*} dan Dihin Muriyatmoko\textsuperscript{2}\\
+\textsuperscript{1}Program Studi Informatika, Universitas Darussalam Gontor\\
+\textsuperscript{2}Program Studi Informatika, Universitas Darussalam Gontor\\
+*Email: \texttt{jaweed@unida.gontor.ac.id}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Penelitian ini menganalisis kelayakan deployment model YOLOv8n terkuantisasi INT8 pada mikrokontroler ESP32-S3 untuk deteksi objek kelas tunggal. Model dilatih pada subset person COCO 2017 (1.600 train, 300 val) pada resolusi 192$\times$192 dan dikuantisasi pasca-pelatihan (PTQ) ke INT8, menghasilkan ukuran model 3,08 MB dengan mAP@0.5 sebesar 4,41\%. Diperlukan tiga tahap optimasi bertahap pada ESP32-S3: (1) kernel referensi TFLite Micro menghasilkan latensi 219,3 detik per inferensi; (2) integrasi ESP-NN SIMD untuk operasi Conv2D mengurangi latensi menjadi 18,0 detik (percepatan 12,2$\times$); (3) implementasi kernel LOGISTIC berbasis LUT menurunkan latensi menjadi 7,2 detik (percepatan total 30,4$\times$). Analisis profil operasi menunjukkan bahwa operasi LOGISTIC mengonsumsi 62,3\% waktu eksekusi sebelum optimasi. Tensor arena terukur sebesar 510 KB (98,5\% di bawah estimasi worst-case teoretis), mengonfirmasi bahwa model muat dalam batas memori ESP32-S3 (8 MB PSRAM, 8 MB flash). Konsumsi daya diperkirakan sebesar 549 mW selama inferensi. Hasil ini menunjukkan bahwa YOLOv8n INT8 layak secara teknis untuk dijalankan pada ESP32-S3, dengan latensi 7,2 detik per frame dan akurasi yang memadai untuk skenario deteksi periodik.
+\end{abstract}
+
+\section{Pendahuluan}
+\label{sec:intro}
+
+Perkembangan deep learning telah memungkinkan deteksi objek secara real-time pada berbagai platform komputasi~\cite{yolov1,yolov3,yolov4,ultralytics}. Namun, sebagian besar model deteksi objek membutuhkan GPU atau CPU kelas server yang mahal dan boros daya. Dalam beberapa tahun terakhir, paradigma TinyML~\cite{tinyml} muncul sebagai alternatif dengan menjalankan model inferensi pada mikrokontroler (MCU) berdaya rendah, memungkinkan aplikasi edge seperti monitoring lingkungan, deteksi anomali, dan otomatisasi industri tanpa ketergantungan cloud~\cite{mcunet,banbury2020bench}.
+
+ESP32-S3 merupakan salah satu MCU yang menarik untuk aplikasi computer vision karena menyediakan dual-core Xtensa LX7 240 MHz, 8 MB flash, 8 MB PSRAM, dukungan kamera, dan konektivitas WiFi---dengan biaya kurang dari \$10. Meskipun demikian, menjalankan model deep learning seperti YOLO pada ESP32-S3 menghadapi tantangan signifikan: keterbatasan memori, daya komputasi terbatas, dan dukungan operator yang tidak selengkap framework desktop.
+
+Penelitian ini bertujuan untuk menjawab pertanyaan: \emph{sejauh mana model YOLOv8n yang telah dikuantisasi dapat dijalankan secara efisien pada mikrokontroler ESP32-S3?} Kontribusi utama penelitian ini adalah:
+
+\begin{enumerate}
+  \item Analisis sistematis pipeline training, kuantisasi, dan deployment YOLOv8n INT8 pada ESP32-S3, mencakup akurasi, latensi, memori, dan daya.
+  \item Optimasi progressive berbasis profil operasi: identifikasi bottleneck melalui \texttt{MicroProfiler}, optimasi Conv2D via ESP-NN SIMD (percepatan 12,2$\times$), dan implementasi kernel LOGISTIC berbasis LUT (percepatan 2,5$\times$ tambahan), menghasilkan percepatan total 30,4$\times$ dari baseline referensi.
+  \item Karakterisasi memori lengkap pada hardware fisik: tensor arena 510 KB (98,5\% di bawah estimasi worst-case), mengonfirmasi efisiensi memory planner TFLite Micro.
+  \item Seluruh artefak penelitian (kode training, firmware ESP32, tabel, dan gambar) dirilis secara terbuka untuk reproduksibilitas.
+\end{enumerate}
+
+\section{Studi Terkait}
+\label{sec:related}
+
+Deployment CNN pada mikrokontroler telah menjadi topik aktif sejak diperkenalkannya CMSIS-NN~\cite{cmsisnn} untuk ARM Cortex-M dan TFLite Micro~\cite{tflitemicro} sebagai framework inferensi lintas platform. MCUNet~\cite{mcunet} menunjukkan bahwa arsitektur yang dioptimasi untuk MCU (dengan memori terbatas) dapat mencapai akurasi kompetitif pada resolusi rendah. MicroNets~\cite{micronets} memperkenalkan pencarian arsitektur neural (NAS) khusus untuk constraint MCU.
+
+YOLO~\cite{yolov1,yolov3,yolov4,ultralytics} tetap menjadi arsitektur deteksi objek dominan, dengan varian nano (YOLOv8n, 3,0M parameter) yang dirancang untuk deployment resource-constrained. Edge-YOLO~\cite{edgeyolo} mengusulkan optimasi khusus edge namun berfokus pada platform ARM dan GPU embedded, bukan MCU kelas bawah.
+
+Kuantisasi pasca-pelatihan (PTQ)~\cite{jacob2018,krishnamoorthi2018,gholami2021survey} telah terbukti efektif mengurangi ukuran model dan meningkatkan kecepatan inferensi dengan degradasi akurasi minimal pada banyak arsitektur. Deep Compression~\cite{deepcompression} menunjukkan kombinasi pruning, kuantisasi, dan Huffman coding dapat mengurangi ukuran model secara drastis. Di ranah MCU, MobileNet dan MobileNetV2~\cite{mobilenets,mobilenetv2} sering digunakan sebagai backbone karena efisiensi komputasinya.
+
+Khusus untuk ESP32, ESP-NN~\cite{espnn} menyediakan kernel neural network yang dioptimasi menggunakan ekstensi SIMD Xtensa LX7. Namun, studi yang secara sistematis mengevaluasi deployment YOLOv8n pada ESP32-S3 dengan analisis memori dan profil operasi yang detail masih terbatas. Penelitian ini mengisi celah tersebut dengan menyajikan evaluasi menyeluruh pada hardware fisik.
+
+\section{Metode}
+\label{sec:method}
+
+Penelitian ini terdiri dari empat tahap utama: persiapan dataset dan pelatihan, kuantisasi, deployment pada ESP32-S3, dan optimasi progressive.
+
+\subsection{Dataset}
+
+Dataset yang digunakan adalah subset kelas \emph{person} dari COCO 2017~\cite{coco}, terdiri dari 1.599 gambar training, 300 validasi, dan 100 test. Resolusi input 192$\times$192 dipilih sebagai resolusi minimum yang mempertahankan detail objek person sekaligus meminimalkan beban komputasi pada ESP32-S3. Tabel~\ref{tab:dataset} menyajikan statistik dataset.
+
+\input{tables/dataset_stats.tex}
+
+\subsection{Arsitektur dan Pelatihan}
+
+Kami menggunakan YOLOv8n~\cite{ultralytics}---varian nano dengan 3,0 juta parameter dan 8,1 GFLOPs. Pelatihan dilakukan dalam dua tahap: 50 epoch dengan backbone dibekukan (transfer learning dari bobot pretrained COCO) diikuti 50 epoch fine-tuning penuh pada resolusi 192$\times$192. Optimizer AdamW digunakan dengan learning rate awal 0,001 dan cosine decay.
+
+Setelah konversi melalui pipeline PyTorch $\rightarrow$ ONNX $\rightarrow$ TensorFlow $\rightarrow$ TFLite, model TFLite FP32 mencapai 12,26\% mAP@0.5. Penurunan 33,33 pp dari baseline PyTorch (45,59\%) disebabkan oleh perbedaan numerik dalam jalur ekspor ONNX, pemetaan kernel operasi TensorFlow, serta perbedaan post-processing antara inferensi Ultralytics native dan evaluator TFLite kustom. Tabel~\ref{tab:model} menyajikan parameter arsitektur dan baseline.
+
+\input{tables/model_architecture.tex}
+
+\subsection{Kuantisasi}
+
+Kuantisasi pasca-pelatihan (PTQ) dilakukan menggunakan TensorFlow Lite dengan representative dataset 200 gambar dari set validasi. Model FP32 TFLite (3,01 MB) dikonversi ke INT8 (3,08 MB) dengan inference type INT8 dan input/output tensor uint8. Tabel~\ref{tab:quantization} membandingkan ketiga varian model.
+
+\input{tables/quantization_comparison.tex}
+
+Penurunan mAP@0.5 sebesar 7,85 pp dari TFLite FP32 ke INT8 merupakan degradasi yang signifikan. Ukuran model tidak berkurang proporsional terhadap pengurangan bit-width karena format flatbuffer TFLite menyertakan overhead struktur graf yang dominan pada skala model ini.
+
+\subsection{Deployment pada ESP32-S3}
+
+Firmware ESP32-S3 dikembangkan menggunakan PlatformIO dengan framework Arduino dan TFLite Micro. Model INT8 dikompilasi sebagai C array (3.386.338 byte) dan disimpan di flash. Tensor arena dialokasikan di PSRAM menggunakan \texttt{heap\_caps\_malloc()}. Tiga konfigurasi kernel diuji secara bertahap:
+
+\begin{enumerate}
+  \item \textbf{Referensi}: Menggunakan kernel TFLite Micro standar tanpa optimasi.
+  \item \textbf{ESP-NN Conv2D}: Kernel Conv2D diganti dengan implementasi ESP-NN SIMD Xtensa LX7.
+  \item \textbf{ESP-NN + LOGISTIC LUT}: Menambahkan kernel LOGISTIK berbasis LUT (lookup table 256-byte) untuk operasi sigmoid.
+\end{enumerate}
+
+Perangkat keras yang digunakan adalah Seeed XIAO ESP32S3 Sense dengan konfigurasi 240 MHz CPU, 8 MB flash, dan 8 MB PSRAM.
+
+\section{Hasil dan Pembahasan}
+\label{sec:results}
+
+\subsection{Profil Operasi dan Optimasi}
+
+Tahap pertama menggunakan kernel referensi TFLite Micro menghasilkan latensi 219.287 ms per inferensi---tidak praktis untuk aplikasi apa pun. Setelah integrasi ESP-NN untuk operasi Conv2D, latensi turun menjadi 18.020 ms (percepatan 12,2$\times$).
+
+Analisis profil operasi menggunakan \texttt{MicroProfiler} TFLite Micro mengungkapkan temuan penting: operasi LOGISTIC (sigmoid) mengonsumsi 62,3\% dari total latensi (11.758 ms), sementara Conv2D hanya 35,2\% (6.634 ms). Fakta ini kontra-intuitif karena Conv2D umumnya dianggap sebagai bottleneck utama pada CNN. LOGISTIC tidak tercakup oleh set kernel ESP-NN sehingga masih menggunakan implementasi referensi naif.
+
+Untuk mengatasi bottleneck ini, kami mengimplementasikan wrapper kernel ESP-NN untuk LOGISTIC menggunakan fungsi \texttt{esp\_nn\_logistic\_s8()}, yang mengevaluasi sigmoid melalui lookup table 256-byte dalam O(1) per elemen. Kernel ini terintegrasi ke dalam TFLite Micro melalui registrasi operator kustom. Setelah optimasi, latensi inferensi turun menjadi 7.216 ms (percepatan 2,5$\times$ tambahan), menghasilkan percepatan total 30,4$\times$ dari baseline referensi. Tabel~\ref{tab:resolution} menyajikan perbandingan ketiga konfigurasi.
+
+\input{tables/resolution_benchmark.tex}
+
+Gambar~\ref{fig:speedup} menyajikan visualisasi percepatan bertahap.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/speedup.pdf}
+\caption{Percepatan latensi inferensi secara bertahap dari referensi hingga ESP-NN + LOGISTIC LUT.}
+\label{fig:speedup}
+\end{figure}
+
+\subsection{Akurasi}
+
+Tabel~\ref{tab:quantization} menunjukkan penurunan akurasi dari PyTorch FP32 (45,59\%) ke TFLite INT8 (4,41\%). Penurunan terbesar terjadi pada konversi PyTorch $\rightarrow$ TFLite FP32 (33,33 pp), bukan pada kuantisasi INT8 (7,85 pp). Pada resolusi 192$\times$192, objek person yang menempati 10\% tinggi gambar hanya setinggi 19 piksel, sehingga fitur diskriminatif yang tersedia sangat terbatas.
+
+Akurasi 4,41\% mAP@0.5 tidak memadai untuk deteksi otonom penuh, namun cukup untuk flagging region of interest yang akan diverifikasi oleh operator manusia. Untuk skenario periodik dengan 8 frame per menit (pada latensi 7,2 detik), model ini dapat menjadi filter awal yang menghemat bandwidth dan daya dibandingkan streaming video terus-menerus.
+
+\subsection{Karakterisasi Memori}
+
+Tabel~\ref{tab:memory} menyajikan anggaran memori terukur pada ESP32-S3.
+
+\input{tables/memory_budget.tex}
+
+Temuan penting: tensor arena aktual hanya 510 KB, jauh di bawah estimasi worst-case teoretis sebesar 34,1 MB. TFLite Micro memory planner berhasil mereuse buffer tensor antar subgraf, mengurangi kebutuhan arena sebesar 98,5\%. Total RAM 835 KB muat dalam 8 MB PSRAM. Model weights 3,3 MB muat dalam 8 MB flash.
+
+\subsection{Konsumsi Daya}
+
+Berdasarkan parameter datasheet ESP32-S3 pada 240 MHz, konsumsi daya selama inferensi diperkirakan sebesar 549 mW (chip). Tabel~\ref{tab:power} menyajikan rincian konsumsi daya per skenario. Daya ini setara dengan drone mikro yang beroperasi selama 1-2 jam dengan baterai 2S 1.000 mAh.
+
+\input{tables/power_budget.tex}
+
+\subsection{Perbandingan Lintas Platform dan Pembahasan}
+
+Tabel~\ref{tab:platform} menyajikan perbandingan kinerja GPU (RTX 3060) dengan tiga konfigurasi ESP32-S3. GPU memberikan 421,6 FPS dengan latensi 2,37 ms, sedangkan ESP32-S3 optimal memberikan 0,139 FPS. Perbedaan 4 orde magnitudo ini konsisten dengan perbedaan daya komputasi teoretis (GPU: ~12 TFLOPS vs ESP32-S3: ~1 GOPS untuk INT8).
+
+\input{tables/platform_comparison.tex}
+
+Analisis menunjukkan bahwa setelah optimasi LOGISTIC, bottleneck utama kini adalah Conv2D (~92\% latensi). ESP-NN Conv2D sudah menggunakan SIMD Xtensa LX7 secara penuh; percepatan lebih lanjut memerlukan perubahan arsitektur model seperti backbone lebih dangkal, pruning terstruktur, atau resolusi input lebih rendah.
+
+\subsection{Limitasi}
+
+Penelitian ini memiliki beberapa keterbatasan. Pertama, akurasi 4,41\% mAP@0.5 membatasi penggunaan otonom. Kedua, latensi 7,2 detik per frame belum memenuhi syarat real-time. Ketiga, estimasi daya bersifat teoretis berdasarkan datasheet. Keempat, belum ada integrasi kamera atau pipeline end-to-end pada hardware fisik.
+
+\section{Kesimpulan}
+
+Penelitian ini mendemonstrasikan bahwa model YOLOv8n yang dikuantisasi INT8 dapat dijalankan pada mikrokontroler ESP32-S3 dengan latensi 7,2 detik per inferensi dan konsumsi daya 549 mW, melalui optimasi progressive berbasis profil operasi yang menghasilkan percepatan total 30,4$\times$ dari baseline referensi. Tensor arena terukur 510 KB mengonfirmasi kelayakan memori. Temuan utama bahwa operasi LOGISTIC menyumbang 62,3\% latensi sebelum optimasi menunjukkan pentingnya profiling operasi dalam pengembangan sistem TinyML.
+
+Penelitian selanjutnya dapat berfokus pada: (i) arsitektur model yang lebih efisien untuk mengurangi beban Conv2D, (ii) evaluasi trade-off resolusi-akurasi pada 160$\times$160 dan 128$\times$128, (iii) integrasi kamera OV2640 untuk pipeline end-to-end, dan (iv) pengukuran daya empiris menggunakan sensor INA219.
+
+\bibliographystyle{ieeetr}
+\bibliography{refs}
+
+\end{document}

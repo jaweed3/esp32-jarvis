@@ -1,0 +1,24 @@
+% Auto-generated
+\begin{table}[h]
+\centering
+\small
+\caption{Estimasi Konsumsi Daya ESP32-S3 per Skenario}
+\label{tab:power}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+Skenario & Arus (mA) & Chip (mW) & USB (mW) \\
+\midrule
+  Deep sleep & 25.0 & 82.5 & 97.1 \\
+  Idle (kamera) & 75.0 & 247.5 & 291.2 \\
+  Idle (tanpa kam) & 25.0 & 82.5 & 97.1 \\
+  Kamera + WiFi & 356.5 & 1176.5 & 1384.1 \\
+  Inferensi saja & 166.5 & 549.4 & 646.4 \\
+  Inferensi + Kam & 216.5 & 714.4 & 840.5 \\
+  Pipeline penuh & 396.5 & 1308.4 & 1539.4 \\
+\midrule
+\multicolumn{4}{l}{\footnotesize Daya USB diestimasi pada efisiensi LDO 85\%} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
