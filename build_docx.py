@@ -77,9 +77,9 @@ add_p(title, size=14, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER, after=6)
 # === AUTHORS ===
 add_p("Jaweed\u00b9, Dihin Muriyatmoko\u00b2", size=10,
       align=WD_ALIGN_PARAGRAPH.CENTER, after=2)
-add_p("\u00b9Program Studi Informatika, Universitas Darussalam Gontor, Indonesia",
+add_p("\u00b9Department of Informatics, Universitas Darussalam Gontor, Ponorogo, Indonesia",
       size=9, align=WD_ALIGN_PARAGRAPH.CENTER, after=0)
-add_p("\u00b2Program Studi Informatika, Universitas Darussalam Gontor, Indonesia",
+add_p("\u00b2Department of Informatics, Universitas Darussalam Gontor, Ponorogo, Indonesia",
       size=9, align=WD_ALIGN_PARAGRAPH.CENTER, after=0)
 add_p("Email: jaweed@unida.gontor.ac.id",
       size=9, align=WD_ALIGN_PARAGRAPH.CENTER, after=8)
@@ -118,8 +118,8 @@ run_font(r1, bold=True, italic=True)
 r2 = p.add_run("ESP32-S3; object detection; post-training quantization; TinyML; YOLOv8n")
 run_font(r2, italic=True)
 
-# === 1. INTRODUCTION ===
-section_heading("1. Introduction")
+# === INTRODUCTION ===
+section_heading("INTRODUCTION")
 body(
     "Deep learning has enabled real-time object detection across various computing platforms [1]\u2013[4]. "
     "However, most detection models require expensive, power-hungry GPU-class hardware. In recent years, "
@@ -145,8 +145,8 @@ body(
     "and (4) all research artifacts released openly for reproducibility."
 )
 
-# === 2. RELATED WORK ===
-section_heading("2. Related Work")
+# === RELATED WORK ===
+section_heading("RELATED WORK")
 body(
     "Deploying CNNs on microcontrollers has been an active topic since CMSIS-NN [8] for ARM Cortex-M "
     "and TFLite Micro [9] as a cross-platform inference framework. MCUNet [6] demonstrated that "
@@ -170,8 +170,8 @@ body(
     "memory and operator profiling remain limited. This study fills that gap."
 )
 
-# === 3. METHOD ===
-section_heading("3. Method")
+# === METHOD ===
+section_heading("METHOD")
 
 sub_heading("A. Dataset")
 body(
@@ -209,8 +209,8 @@ body(
     "Xtensa LX7 SIMD extensions; and (3) ESP-NN with a custom LUT-based LOGISTIC kernel."
 )
 
-# === 4. RESULTS AND DISCUSSION ===
-section_heading("4. Results and Discussion")
+# === RESULTS AND DISCUSSION ===
+section_heading("RESULTS AND DISCUSSION")
 
 sub_heading("A. Operator Profiling and Optimization")
 body(
@@ -266,8 +266,8 @@ body(
     "end-to-end camera integration was performed on the physical hardware."
 )
 
-# === 5. CONCLUSION ===
-section_heading("5. Conclusion")
+# === CONCLUSION ===
+section_heading("CONCLUSION")
 body(
     "This study demonstrated that an INT8 quantized YOLOv8n model can be deployed on the ESP32-S3 "
     "microcontroller at 7.2 s per inference and 549 mW estimated power consumption, through progressive "
@@ -284,14 +284,14 @@ body(
 )
 
 # === ACKNOWLEDGMENT ===
-section_heading("Acknowledgment", before=4)
+section_heading("ACKNOWLEDGMENT", before=4)
 body(
     "The authors thank the anonymous reviewers for their constructive feedback that improved "
     "the quality of this manuscript."
 )
 
 # === REFERENCES ===
-section_heading("References", before=8)
+section_heading("REFERENCES", before=8)
 
 refs = [
     '[1] J. Redmon, S. Divvala, R. Girshick, and A. Farhadi, "You only look once: Unified, real-time object detection," in Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR), 2016, pp. 779\u2013788.',
@@ -328,6 +328,6 @@ for ref in refs:
 
 doc.save(OUTPUT)
 print(f"OK: {OUTPUT} ({os.path.getsize(OUTPUT)} bytes)")
-print(f"Judul kata: {len(title.split())}")
-print(f"Abstrak kata: {len(abstract.split())}")
-print(f"Referensi: {len(refs)}")
+print(f"Title words: {len(title.split())}")
+print(f"Abstract words: {len(abstract.split())}")
+print(f"References: {len(refs)}")
