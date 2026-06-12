@@ -70,8 +70,8 @@ def body(text):
 
 
 # === TITLE ===
-title = ("Analisis dan Benchmark Deployment YOLOv8n INT8 pada ESP32-S3: "
-         "Optimasi Progressive")
+title = ("Benchmarking YOLOv8n INT8 on ESP32-S3: Progressive Operator "
+         "Optimization for MCU Deployment")
 add_p(title, size=14, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER, after=6)
 
 # === AUTHORS ===
